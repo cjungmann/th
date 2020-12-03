@@ -1,0 +1,5 @@
+src/*.o
+src/bdb
+src/istringt
+src/parse
+files
