@@ -63,5 +63,10 @@ typedef int(*Dumpster)(DBT *key, DBT *value, void *data);
 void dump_table(Table *table, Dumpster dumpster, void *data);
 
 
+
+
+#include "istringt.h"
+
+
 #endif
 
