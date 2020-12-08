@@ -62,7 +62,7 @@ Result ivt_get_recid_raw_imp(IVTable *t, RecID *id, DBT *key)
    return result;
 }
 
-RecID ivt_get_recid_imp(IVTable *t, void *data, DataSize size)
+RecID ivt_get_recid_imp(IVTable *t, void *key_data, DataSize size)
 {
    DBT key;
    RecID id = 0;

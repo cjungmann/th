@@ -9,7 +9,7 @@ typedef Result(*ivt_open)          (IVTable *t, const char *name);
 typedef void  (*ivt_close)         (IVTable *t);
 typedef Result(*ivt_get_recid_raw) (IVTable *t, RecID *id, DBT *key);
 typedef Result(*ivt_add_record_raw)(IVTable *t, RecID *id, DBT *key, DBT *value);
-typedef RecID (*ivt_get_recid)     (IVTable *t, void* data, DataSize size);
+typedef RecID (*ivt_get_recid)     (IVTable *t, void* key_data, DataSize size);
 typedef RecID (*ivt_add_record)    (IVTable *t, RecPair *pair);
 typedef Result(*ivt_update_record) (IVTable *t, RecID id, DBT *value);
 
