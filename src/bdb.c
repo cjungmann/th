@@ -3,15 +3,15 @@
 #include <string.h>
 #include "bdb.h"
 
-int db_open_imp(DB **ret_db,
-                const char *name,
-                DBTYPE type,
-                bool create,
-                RecLen reclen,
-                DBFlags set_flags)
+Result db_open_imp(DB **ret_db,
+                   const char *name,
+                   DBTYPE type,
+                   bool create,
+                   RecLen reclen,
+                   DBFlags set_flags)
 {
    DB *db;
-   int result;
+   Result result;
 
    if ((result = db_create(&db, NULL, 0)))
       goto abandon_function;
@@ -49,10 +49,15 @@ void db_close_imp(void *th)
 {
    Table *this = (Table*)th;
    if (this->db)
+   {
       this->db->close(this->db,0);
+      this->db = NULL;
+   }
 }
 
-int db_add_record_basic(void *th, RecID *recid, RecPair *pair)
+bool db_is_open_imp(void *t) { return ((Table*)t)->db != NULL; }
+
+Result db_add_record_basic(void *th, RecID *recid, RecPair *pair)
 {
    Table *this = (Table*)th;
    DB *db = this->db;
@@ -60,10 +65,10 @@ int db_add_record_basic(void *th, RecID *recid, RecPair *pair)
    return db->put(db, NULL, &pair->key, &pair->value, DB_APPEND);
 }
 
-int db_add_record_recno(void *th, RecID *recid, RecPair *pair)
+Result db_add_record_recno(void *th, RecID *recid, RecPair *pair)
 {
    Table *this = (Table*)th;
-   int result = 1;
+   Result result = 1;
 
    DB *db = this->db;
    if (!(result = db->put(db, NULL, &pair->key, &pair->value, DB_APPEND)))
@@ -76,10 +81,10 @@ int db_add_record_recno(void *th, RecID *recid, RecPair *pair)
 
 
 
-int O_Queue(Table *table, const char *name, bool create, RecLen reclen)
+Result O_Queue(Table *table, const char *name, bool create, RecLen reclen)
 {
    DB *db = NULL;
-   int result = db_open_imp(&db, name, DB_QUEUE, create, reclen, 0);
+   Result result = db_open_imp(&db, name, DB_QUEUE, create, reclen, 0);
    if (!result)
    {
       table->db = db;
@@ -92,11 +97,11 @@ int O_Queue(Table *table, const char *name, bool create, RecLen reclen)
    return result;
 }
 
-int O_Recno(Table *table, const char *name, bool create, RecLen reclen)
+Result O_Recno(Table *table, const char *name, bool create, RecLen reclen)
 {
    DB *db = NULL;
 
-   int result = db_open_imp(&db, name, DB_RECNO, create, reclen, 0);
+   Result result = db_open_imp(&db, name, DB_RECNO, create, reclen, 0);
    if (!result)
    {
       table->db = db;
@@ -109,7 +114,7 @@ int O_Recno(Table *table, const char *name, bool create, RecLen reclen)
    return result;
 }
 
-int O_Index_S2I(Table *table, const char *name, bool create, RecLen reclen)
+Result O_Index_S2I(Table *table, const char *name, bool create, RecLen reclen)
 {
    DB *db = NULL;
    int result = db_open_imp(&db, name, DB_BTREE, create, 0, 0);
@@ -125,10 +130,10 @@ int O_Index_S2I(Table *table, const char *name, bool create, RecLen reclen)
    return result;
 }
 
-int O_Index_I2I(Table *table, const char *name, bool create, RecLen reclen)
+Result O_Index_I2I(Table *table, const char *name, bool create, RecLen reclen)
 {
    DB *db = NULL;
-   int result = db_open_imp(&db, name, DB_BTREE, create, 0, DB_DUPSORT);
+   Result result = db_open_imp(&db, name, DB_BTREE, create, 0, DB_DUPSORT);
    if (!result)
    {
       table->db = db;
@@ -141,10 +146,11 @@ int O_Index_I2I(Table *table, const char *name, bool create, RecLen reclen)
    return result;
 }
 
-int open_table(Table *table, Opener opener, const char *name, bool create, RecLen reclen)
+Result open_table(Table *table, Opener opener, const char *name, bool create, RecLen reclen)
 {
    table->db = NULL;
    table->close = db_close_imp;
+   table->is_open = db_is_open_imp;
 
    return (*opener)(table, name, create, reclen);
 }
@@ -152,7 +158,7 @@ int open_table(Table *table, Opener opener, const char *name, bool create, RecLe
 void dump_table(Table *table, Dumpster dumpster, void *data)
 {
    DBC *cursor;
-   int result;
+   Result result;
    if ((result = table->db->cursor(table->db, NULL, &cursor, 0)))
       goto abandon_function;
 
@@ -175,6 +181,24 @@ void dump_table(Table *table, Dumpster dumpster, void *data)
    
   abandon_function:
    ;
+}
+
+DBT* set_dbt(DBT *dbt, void *data, DataSize size)
+{
+   memset(dbt, 0, sizeof(DBT));
+   if (size)
+   {
+      dbt->data = data;
+      dbt->size = size;
+   }
+   return dbt;
+}
+
+RecPair* set_pair(RecPair *pair, PairSet ps)
+{
+   set_dbt(&pair->key, ps.key_data, ps.key_size);
+   set_dbt(&pair->value, ps.value_data, ps.value_size);
+   return pair;
 }
 
 void init_pair(RecPair *pair)
@@ -212,7 +236,7 @@ RecPair* set_put_string_index(RecPair *pair, const char *str, RecID *rec)
 
 #include <stdio.h>
 
-int dump_string_record(DBT *key, DBT *value, void *data)
+bool dump_string_record(DBT *key, DBT *value, void *data)
 {
    if (value->size > 0)
       printf("%3u: %.*s\n", *(RecID*)key->data, value->size, (char*)value->data);
@@ -263,7 +287,7 @@ typedef struct tfiles_t {
 
 void process_single_table(const char **ptr, const char **end)
 {
-   int result;
+   Result result;
    Table table;
    RecID recid;
    RecPair pair;
