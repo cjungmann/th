@@ -21,4 +21,8 @@ ${TARGET}: ${LIB_MODULES}
 clean:
 	rm -f src/*.o
 	rm -f src/bdb
+	rm -f src/parse
 	rm -f src/istringt
+	rm -f src/ivtable
+	rm -f src/aaa.*
+	rm -f src/test.db
