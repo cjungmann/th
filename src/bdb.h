@@ -21,12 +21,12 @@ typedef struct rec_pair_t {
 } RecPair;
 
 // Function pointer typedefs for Table member functions
-typedef Result (*db_open_f)(void *this, const char *name, bool create, RecLen reclen);
-typedef void (*db_close_f)(void *this);
-typedef Result (*db_add_record_f)(void *this, RecID *recid, RecPair *pair);
-typedef RecID (*add_string_f)(void *this, RecID *recid, const char *value);
-typedef Result (*db_get_setting_f)(void *this);
-typedef bool (*db_get_flag_f)(void *this);
+typedef Result (*db_open_f)        (void *this, const char *name, bool create, RecLen reclen);
+typedef void   (*db_close_f)       (void *this);
+typedef Result (*db_add_record_f)  (void *this, RecID *recid, RecPair *pair);
+typedef RecID  (*add_string_f)     (void *this, RecID *recid, const char *value);
+typedef Result (*db_get_setting_f) (void *this);
+typedef bool   (*db_get_flag_f)    (void *this);
 
 typedef struct class_table {
    DB               *db;
@@ -34,12 +34,6 @@ typedef struct class_table {
    db_add_record_f  add;
    db_get_flag_f    is_open;
 } Table;
-Table table_base;
-
-struct class_string_table {
-   Table        table;
-   add_string_f adder;
-};
 
 // DBT-setting section
 typedef struct pairset {
