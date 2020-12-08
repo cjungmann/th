@@ -29,6 +29,8 @@ struct istring_t {
    ist_get_db      get_db;
    ist_get_ndx_db  get_ndx_db;
 };
+
+// Constructor-like function to begin using an IStringT object:
 void init_istringt(IStringT *t);
 
 
