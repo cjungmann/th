@@ -5,7 +5,7 @@
 
 #include "parse_thesaurus.h"
 
-int printing_word_user(const char *str, int size, int newline, void *data)
+bool printing_word_user(const char *str, int size, int newline, void *data)
 {
    const char *col = newline ? "[32;1m" : "";
    printf("%s%.*s[m\n", col, size, str);
