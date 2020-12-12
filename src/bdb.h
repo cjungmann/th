@@ -68,6 +68,7 @@ int open_table(Table *table, Opener opener, const char *name, bool create, RecLe
 
 // Utilities
 typedef bool (*Dumpster)(DBT *key, DBT *value, void *data);
+void dump_db(DB *db, Dumpster dumpster, void *data);
 void dump_table(Table *table, Dumpster dumpster, void *data);
 
 

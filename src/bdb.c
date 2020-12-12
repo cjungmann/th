@@ -155,11 +155,11 @@ Result open_table(Table *table, Opener opener, const char *name, bool create, Re
    return (*opener)(table, name, create, reclen);
 }
 
-void dump_table(Table *table, Dumpster dumpster, void *data)
+void dump_db(DB *db, Dumpster dumpster, void *data)
 {
    DBC *cursor;
    Result result;
-   if ((result = table->db->cursor(table->db, NULL, &cursor, 0)))
+   if ((result = db->cursor(db, NULL, &cursor, 0)))
       goto abandon_function;
 
    DBT key;
@@ -174,13 +174,18 @@ void dump_table(Table *table, Dumpster dumpster, void *data)
    }
 
    if (result != DB_NOTFOUND)
-      table->db->err(table->db, result, "Unexpected cursor error.");
+      db->err(db, result, "Unexpected cursor error.");
 
   abandon_cursor:
    cursor->close(cursor);
    
   abandon_function:
    ;
+}
+
+void dump_table(Table *table, Dumpster dumpster, void *data)
+{
+   dump_db(table->db, dumpster, data);
 }
 
 DBT* set_dbt(DBT *dbt, void *data, DataSize size)
