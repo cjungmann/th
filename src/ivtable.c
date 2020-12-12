@@ -64,10 +64,14 @@ Result ivt_get_recid_raw_imp(IVTable *t, RecID *id, DBT *key)
 
 RecID ivt_get_recid_imp(IVTable *t, void *key_data, DataSize size)
 {
-   DBT key;
+   Result result;
    RecID id = 0;
-   memset(&key, 0, sizeof(DBT));
-   return ivt_get_recid_raw_imp(t, &id, &key);
+   DBT key;
+   set_dbt(&key, key_data, size);
+   if ((result = ivt_get_recid_raw_imp(t, &id, &key)))
+      return 0;
+   else
+      return id;
 }
 
 Result ivt_add_record_raw_imp(IVTable *t, RecID *id, DBT *key, DBT *value)
@@ -138,7 +142,7 @@ Result ivt_get_record_by_recid_raw(IVTable *t, DBT *key, DBT *value)
 Result ivt_get_record_by_recid_imp(IVTable *t, RecID id, DBT *value)
 {
    DBT key;
-   set_dbt(&key, &id, sizeof(DBT));
+   set_dbt(&key, &id, sizeof(RecID));
 
    return ivt_get_record_by_recid_raw(t, &key, value);
 }

@@ -25,12 +25,12 @@ struct ivtable_t {
    Opener opener;
    RecLen reclen;
 
-   ivt_open            open;
-   ivt_close           close;
-   ivt_get_recid_raw   get_recid_raw;
-   ivt_add_record_raw  add_record_raw;
-   ivt_get_recid       get_recid;
-   ivt_add_record      add_record;
+   ivt_open           open;
+   ivt_close          close;
+   ivt_get_recid_raw  get_recid_raw;
+   ivt_add_record_raw add_record_raw;
+   ivt_get_recid      get_recid;
+   ivt_add_record     add_record;
    ivt_update_record  update_record;
 
    ivt_get_record_by_recid get_record_by_recid;
