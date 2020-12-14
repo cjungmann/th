@@ -43,7 +43,6 @@ typedef struct pairset {
    RecLen value_size;
 } PairSet;
 
-DBT *set_dbt(DBT *dbt, void *data, DataSize size);
 void init_pair(RecPair *pair);
 RecPair* set_pair(RecPair *pair, PairSet ps);
 void set_dbt_str(DBT *dbt, const char *str);
@@ -75,6 +74,7 @@ void dump_table(Table *table, Dumpster dumpster, void *data);
 
 
 #include "istringt.h"
+#include "utils.h"
 
 
 #endif

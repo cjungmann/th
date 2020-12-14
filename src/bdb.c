@@ -188,17 +188,6 @@ void dump_table(Table *table, Dumpster dumpster, void *data)
    dump_db(table->db, dumpster, data);
 }
 
-DBT* set_dbt(DBT *dbt, void *data, DataSize size)
-{
-   memset(dbt, 0, sizeof(DBT));
-   if (size)
-   {
-      dbt->data = data;
-      dbt->size = size;
-   }
-   return dbt;
-}
-
 RecPair* set_pair(RecPair *pair, PairSet ps)
 {
    set_dbt(&pair->key, ps.key_data, ps.key_size);
