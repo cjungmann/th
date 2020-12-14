@@ -3,4 +3,7 @@ src/bdb
 src/istringt
 src/ivtable
 src/parse
+src/thesaurus
+src/utils
 files
+words
