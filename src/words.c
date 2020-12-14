@@ -55,9 +55,11 @@ bool dump_thesaurus(void)
    return 1;
 }
 
-void show_thesaurus_word_callback(RecID *list, RecID *listend, void *data)
+void show_thesaurus_word_callback(RecID *list, int length, void *data)
 {
-   /* TTABS *ttabs = (TTABS*)data; */
+   TTABS *ttabs = (TTABS*)data;
+   RecID *listend = list + length;
+
    const char *colors[] = {
       "\x1b[31;1m",
       "\x1b[32;1m",
@@ -68,14 +70,26 @@ void show_thesaurus_word_callback(RecID *list, RecID *listend, void *data)
       "\x1b[37;1m"
    };
 
+   char buff[64];
+   TREC *trec = (TREC*)buff;
+
+   Result result;
    int counter = 0;
    int color_count = sizeof(colors) / sizeof(colors[0]);
+   const char *color;
 
    while (list < listend)
    {
-      printf(" %s%u\x1b[m", colors[counter++%color_count], *list);
+      color = colors[counter++ % color_count];
+      if (!(result = TTB.get_word_rec(ttabs, *list, trec, sizeof(buff))))
+         printf(" %s%s\x1b[m", color, trec->value);
+      else
+         printf(" %s%u\x1b[m", color, *list);
+      
       ++list;
    }
+
+   printf("\n");
 }
 
 int show_thesaurus_word(const char *word)
@@ -140,26 +154,17 @@ int thesaurus_word_by_recid(int recid)
    return retval;
 }
 
-bool index_dumpster(DBT *key, DBT *value, void *data)
-{
-   int *counter = (int*)data;
-   RecID root = *(RecID*)key->data;
-   RecID word = *(RecID*)value->data;
-   printf("%7d: %6u -> %6u\n", ++*counter, root, word);
-   return 1;
-}
-
 raAction actions[] = {
    {'h', "help", "This help display", &ra_show_help_agent },
 
    {'i', "id", "Search thesaurus word by id", &ra_int_agent, &thesaurus_recid },
 
    {'T', "import_thesaurus", "Import thesaurus contents", &ra_flag_agent, &flag_import_thesaurus },
-   {'t', "thesaurus word", "Word to be sought in thesaurus", &ra_string_agent, &thesaurus_word },
+   {'t', "thesaurus_word", "Word to be sought in thesaurus", &ra_string_agent, &thesaurus_word },
 
    {'f', "thesaurus_name", "Base name of thesaurus database", &ra_string_agent, &thesaurus_name },
-
-   {'d', "thesaurus_dump", "Dump contents of thesaurus database", &ra_flag_agent, &flag_dump_thesaurus }
+   {'d', "thesaurus_dump", "Dump contents of thesaurus database", &ra_flag_agent, &flag_dump_thesaurus },
+   {-1, "*word", "Show thesaurus entry", &ra_string_agent, &thesaurus_word }
 };
 
 int main(int argc, const char **argv)

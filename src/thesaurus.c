@@ -2,20 +2,23 @@
 #include "ivtable.h"
 #include "utils.h"
 #include "thesaurus.h"
+#include "rrtable.h"
 
 #include <string.h>   // for memset()
 
+// "class" member functions, for TTABS_Class instance TTB
 void   ttabs_init_imp(TTABS *ttabs);
 Result ttabs_open_imp(TTABS *ttabs, const char *name);
 void   ttabs_close_imp(TTABS *ttabs);
 Result ttabs_add_word_imp(TTABS *ttabs, const char *str, int size, bool newline);
-Result ttabs_get_word_imp(TTABS *ttabs, RecID id, char *buffer, DataSize size);
+Result ttabs_get_word_rec_imp(TTABS *ttabs, RecID id, TREC *buffer, DataSize size);
 RecID  ttabs_lookup_imp(TTABS *ttabs, const char *str);
-Result ttabs_get_words_imp(TTABS *ttabs, RecID id, word_list_user user);
+Result ttabs_get_words_imp(TTABS *ttabs, RecID id, recid_list_user user);
 
 
 void i2i_opener(const char *path, void *data);
-Result open_i2i(DB **db, int create, const char *name, const char *ext);
+Result open_linker(DB **db, int create, const char *name, const char *ext);
+
 bool save_word_links(TTABS *ttabs, RecID root, RecID word);
 
 TTABS_Class TTB = {
@@ -23,7 +26,7 @@ TTABS_Class TTB = {
    ttabs_open_imp,
    ttabs_close_imp,
    ttabs_add_word_imp,
-   ttabs_get_word_imp,
+   ttabs_get_word_rec_imp,
    ttabs_lookup_imp,
    ttabs_get_words_imp
 };
@@ -43,10 +46,10 @@ Result ttabs_open_imp(TTABS *ttabs, const char *name)
    if ((result = ivt->open(ivt, name)))
       goto abandon_function;
 
-   if ((result = open_i2i(&db_r2w, 1, name, "r2w")))
+   if ((result = open_linker(&db_r2w, 1, name, "r2w")))
       goto abandon_ivt;
 
-   if ((result = open_i2i(&db_w2r, 1, name, "w2r")))
+   if ((result = open_linker(&db_w2r, 1, name, "w2r")))
       goto abandon_r2w;
 
    ttabs->db_r2w = db_r2w;
@@ -156,23 +159,53 @@ Result ttabs_add_word_imp(TTABS *ttabs, const char *str, int size, bool newline)
    return 1;
 }
 
-Result ttabs_get_word_imp(TTABS *ttabs, RecID id, char *buffer, DataSize size)
+/**
+ * Copies the word record, a string preceded by a TREC struct, into
+ * the provided buffer, adding the terminating \0 for convenience.
+ *
+ * Some adjustments will be made for a too-small buffer.  If
+ * the buffer is large enough to contain the TREC header plus
+ * one extra byte to make a zero-length string, then as much of
+ * the content as fits will be copied to the buffer as fits.
+ * Otherwise (if the buffer is too small for even that), the
+ * entire buffer will be set to 0s.
+ *
+ * In either case of too-small buffer, an error will be
+ * indicated by the return value.
+ */
+Result ttabs_get_word_rec_imp(TTABS *ttabs, RecID id, TREC *buffer, DataSize size)
 {
-   DBT value;
-   memset(&value, 0, sizeof(DBT));
+   Result result;
 
-   Result result = ttabs->ivt.get_record_by_recid(&ttabs->ivt, id, &value);
-   if (result == 0)
+   // Exit immediately if buffer not sufficient to hold anything useful:
+   if (size < sizeof(TREC) + 1)
    {
-      if (value.size < size)
-      {
-         memcpy(buffer, value.data, value.size);
-         buffer[value.size] = '\0';
-      }
-      else
-         result = DB_BUFFER_SMALL;
+      memset(buffer, 0, size);
+      result = DB_BUFFER_SMALL;
+      goto abandon_function;
    }
 
+   DBT value;
+   memset(&value, 0, sizeof(DBT));
+   char *rawbuff = (char*)buffer;
+
+   if (!(result = ttabs->ivt.get_record_by_recid(&ttabs->ivt, id, &value)))
+   {
+      if (value.size < size-1)
+      {
+         memcpy(rawbuff, value.data, value.size);
+         rawbuff[value.size] = '\0';
+      }
+      else
+      {
+         memcpy(rawbuff, value.data, size-1);
+         rawbuff[size-1] = '\0';
+
+         result = DB_BUFFER_SMALL;
+      }
+   }
+      
+  abandon_function:
    return result;
 }
 
@@ -227,7 +260,7 @@ bool get_words_callback(DBT *key, DBT *value, void *closure)
       return 0;
 }
 
-Result ttabs_get_words_imp(TTABS *ttabs, RecID id, word_list_user user)
+Result ttabs_get_words_imp(TTABS *ttabs, RecID id, recid_list_user user)
 {
    DB *db = ttabs->db_r2w;
    GWC gwc;
@@ -252,7 +285,7 @@ Result ttabs_get_words_imp(TTABS *ttabs, RecID id, word_list_user user)
          // The key must reset to rerun the list
          set_dbt(&key, &id, sizeof(RecID));
          run_cursor_with_closure(cursor, &key, get_words_callback, &gwc);
-         (*user)(idlist, &idlist[gwc.count], ttabs);
+         (*user)(idlist, gwc.count, ttabs);
       }
 
       cursor->close(cursor);
@@ -265,7 +298,7 @@ Result ttabs_get_words_imp(TTABS *ttabs, RecID id, word_list_user user)
  * End of get_words section
  */
 
-Result saved_ttabs_get_words_imp(TTABS *ttabs, RecID id, word_list_user user)
+Result saved_ttabs_get_words_imp(TTABS *ttabs, RecID id, recid_list_user user)
 {
    DB *db = ttabs->db_r2w;
    int count = 0;
@@ -308,34 +341,16 @@ typedef struct _db_opening {
    bool   create;
 } DBO;
 
-// Callback function for strargs_builder when called by open_i2i
+// Callback function for strargs_builder when called by open_linker
 void i2i_opener(const char *path, void *data)
 {
    DBO *dbo = (DBO*)data;
-
    DB *db;
-   Result *result = &dbo->result;
-
-   if ((*result = db_create(&db, NULL, 0)))
-      goto abandon_function;
-
-   if ((*result = db->set_flags(db, DB_DUPSORT)))
-      goto abandon_db;
-
-   if ((*result = db->open(db, NULL, path, NULL, DB_BTREE, DB_CREATE | DB_OVERWRITE, 0664)))
-      goto abandon_db;
-
-   dbo->db = db;
-   goto abandon_function;
-
-  abandon_db:
-   db->close(db, 0);
-
-  abandon_function:
-   ;
+   if (!(dbo->result = rrt_open(&db, 1, path)))
+      dbo->db = db;
 }
 
-Result open_i2i(DB **db, int create, const char *name, const char *ext)
+Result open_linker(DB **db, int create, const char *name, const char *ext)
 {
    DBO dbo;
    memset(&dbo, 0, sizeof(DBO));
@@ -431,6 +446,7 @@ bool thesaurus_dumpster(DBT *key, DBT *value, void *data)
 #include <stdio.h>
 #include "bdb.c"
 #include "ivtable.c"
+#include "rrtable.c"
 #include "utils.c"
 
 void test_TTABS_opener(void)
