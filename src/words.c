@@ -55,12 +55,9 @@ bool dump_thesaurus(void)
    return 1;
 }
 
-void show_thesaurus_word_callback(RecID *list, int length, void *data)
+const char *cycle_color(void)
 {
-   TTABS *ttabs = (TTABS*)data;
-   RecID *listend = list + length;
-
-   const char *colors[] = {
+   static const char *colors[] = {
       "\x1b[31;1m",
       "\x1b[32;1m",
       "\x1b[33;1m",
@@ -70,21 +67,28 @@ void show_thesaurus_word_callback(RecID *list, int length, void *data)
       "\x1b[37;1m"
    };
 
+   static int counter = 0;
+   static int climit = sizeof(colors) / sizeof(colors[0]);
+
+   return colors[ counter++ % climit ];
+}
+
+void show_thesaurus_word_callback(RecID *list, int length, void *data)
+{
+   TTABS *ttabs = (TTABS*)data;
+   RecID *listend = list + length;
+
    char buff[64];
    TREC *trec = (TREC*)buff;
 
    Result result;
-   int counter = 0;
-   int color_count = sizeof(colors) / sizeof(colors[0]);
-   const char *color;
 
    while (list < listend)
    {
-      color = colors[counter++ % color_count];
       if (!(result = TTB.get_word_rec(ttabs, *list, trec, sizeof(buff))))
-         printf(" %s%s\x1b[m", color, trec->value);
+         printf(" %s%s\x1b[m", cycle_color(), trec->value);
       else
-         printf(" %s%u\x1b[m", color, *list);
+         printf(" %s%u\x1b[m", cycle_color(), *list);
       
       ++list;
    }
