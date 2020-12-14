@@ -84,6 +84,64 @@ void strargs_builder(catstr_user user, void *data, const char *str, ...)
 }
 
 
+/**
+ * Shorthand function for preparing a DBT
+ */
+DBT* set_dbt(DBT *dbt, void *data, DataSize size)
+{
+   memset(dbt, 0, sizeof(DBT));
+   if (size)
+   {
+      dbt->data = data;
+      dbt->size = size;
+   }
+   return dbt;
+}
+
+
+/**
+ * We assume that the cursor is already set to the first
+ * matched record, so we use it before continuing.
+ */
+Result cycle_cursor(DBC *cursor, DBT *key, cc_user user, void *closure)
+{
+   DBT value;
+   memset(&value, 0, sizeof(DBT));
+
+   Result result;
+
+   if ((result = cursor->get(cursor, key, &value, DB_CURRENT)))
+      goto abandon_function;
+
+   while ((*user)(key, &value, closure))
+   {
+      if ((result = cursor->get(cursor, key, &value, DB_NEXT)))
+         goto abandon_function;
+   }
+
+  abandon_function:
+   return result;
+}
+
+/**
+ * Use this function to report errors without your code checking
+ * for errors.  Use this by putting the db function call as the
+ * first argument of the function:
+ *
+ * bdberr(rrt_add_link(db, 5, 11), stderr, "Adding a link");
+ */
+void bdberr(Result result, FILE *file, const char *context)
+{
+   if (result)
+   {
+      const char *errstr = db_strerror(result);
+      fprintf(file, "Error \"\x1b[31;1m%s\x1b[m\"", errstr);
+      if (context)
+         fprintf(file, " (%s)", context);
+      fprintf(file, "\n");
+   }
+}
+
 #ifdef UTILS_MAIN
 
 #include <stdio.h>
