@@ -13,8 +13,9 @@ void   ttabs_close_imp(TTABS *ttabs);
 Result ttabs_add_word_imp(TTABS *ttabs, const char *str, int size, bool newline);
 Result ttabs_get_word_rec_imp(TTABS *ttabs, RecID id, TREC *buffer, DataSize size);
 RecID  ttabs_lookup_imp(TTABS *ttabs, const char *str);
-Result ttabs_get_words_imp(TTABS *ttabs, RecID id, recid_list_user user);
-
+Result ttabs_get_words_imp(TTABS *ttabs, RecID id, recid_list_user user, void *closure);
+Result ttabs_walk_entries_imp(TTABS *ttabs, tword_user user, void *closure);
+int ttabs_count_synonyms_imp(TTABS *ttabs, RecID id);
 
 void i2i_opener(const char *path, void *data);
 Result open_linker(DB **db, int create, const char *name, const char *ext);
@@ -28,7 +29,9 @@ TTABS_Class TTB = {
    ttabs_add_word_imp,
    ttabs_get_word_rec_imp,
    ttabs_lookup_imp,
-   ttabs_get_words_imp
+   ttabs_get_words_imp,
+   ttabs_walk_entries_imp,
+   ttabs_count_synonyms_imp
 };
 
 void ttabs_init_imp(TTABS *ttabs)
@@ -237,9 +240,11 @@ void run_cursor_with_closure(DBC *cursor, DBT *key, cursor_callback cb, void *cl
 }
 
 typedef struct get_words_closure {
-   RecID id;
-   int   count;
-   RecID *list;
+   RecID           id;
+   recid_list_user rluser;
+   void            *rlclosure;
+   int             count;
+   RecID           *list;
 } GWC;
 
 /** This is used as a *cursor_callback function pointer */
@@ -260,13 +265,11 @@ bool get_words_callback(DBT *key, DBT *value, void *closure)
       return 0;
 }
 
-Result ttabs_get_words_imp(TTABS *ttabs, RecID id, recid_list_user user)
+Result ttabs_get_words_imp(TTABS *ttabs, RecID id, recid_list_user user, void *closure)
 {
    DB *db = ttabs->db_r2w;
-   GWC gwc;
-   memset(&gwc, 0, sizeof(GWC));
-   gwc.id = id;
 
+   GWC gwc = { id, user, closure };
 
    DBC *cursor;
    Result result;
@@ -285,7 +288,7 @@ Result ttabs_get_words_imp(TTABS *ttabs, RecID id, recid_list_user user)
          // The key must reset to rerun the list
          set_dbt(&key, &id, sizeof(RecID));
          run_cursor_with_closure(cursor, &key, get_words_callback, &gwc);
-         (*user)(idlist, gwc.count, ttabs);
+         (*user)(ttabs, idlist, gwc.count, closure);
       }
 
       cursor->close(cursor);
@@ -294,45 +297,67 @@ Result ttabs_get_words_imp(TTABS *ttabs, RecID id, recid_list_user user)
    return result;
 }
 
-/******
- * End of get_words section
- */
-
-Result saved_ttabs_get_words_imp(TTABS *ttabs, RecID id, recid_list_user user)
+Result ttabs_walk_entries_imp(TTABS *ttabs, tword_user user, void *closure)
 {
-   DB *db = ttabs->db_r2w;
-   int count = 0;
-   DBT key;
-   set_dbt(&key, &id, sizeof(RecID));
-   DBT value;
-   memset(&value, 0, sizeof(RecID));
-
+   DB *db = ttabs->ivt.get_records_db(&ttabs->ivt);
    DBC *cursor;
    Result result;
 
    if ((result = db->cursor(db, NULL, &cursor, 0)))
       goto abandon_function;
 
-   if ((result = cursor->get(cursor, &key, &value, DB_SET)))
-      goto abandon_cursor;
+   DBT key;
+   memset(&key, 0, sizeof(DBT));
+   DBT value;
+   memset(&value, 0, sizeof(DBT));
 
-   while (*(RecID*)key.data == id)
-   {
-      ++count;
+   while (!(result = cursor->get(cursor, &key, &value, DB_NEXT)))
+      (*user)(ttabs, *(RecID*)key.data, (TREC*)value.data, closure);
 
-      if ((result = cursor->get(cursor, &key, &value, DB_NEXT)))
-         break;
-   }
-
-
-  abandon_cursor:
-   cursor->close(cursor);
+   if (result != DB_NOTFOUND)
+      db->err(db, result, "Fell out of entries walk.");
 
   abandon_function:
    return result;
 }
-                       
 
+int ttabs_count_synonyms_imp(TTABS *ttabs, RecID id)
+{
+   DB *db = ttabs->db_r2w;
+   int count = 0;
+
+   DBT key;
+   set_dbt(&key, &id, sizeof(RecID));
+
+   DBT value;
+   memset(&value, 0, sizeof(DBT));
+
+   DBC *cursor;
+
+   Result result;
+   if ((result = db->cursor(db, NULL, &cursor, 0)))
+      goto abandon_function;
+
+   if ((result = cursor->get(cursor, &key, &value, DB_SET)))
+      goto abandon_function;
+
+   do
+   {
+      ++count;
+      if ((result = cursor->get(cursor, &key, &value, DB_NEXT)))
+         break;
+      if (*(RecID*)key.data != id)
+         break;
+   }
+   while( !result);
+   
+  abandon_function:
+   return count;
+}
+
+/******
+ * End of get_words section
+ */
 
 
 typedef struct _db_opening {
@@ -475,6 +500,6 @@ int main(int argc, const char **argv)
 /* compile-command: "b=thesaurus; \*/
 /*  cc -Wall -Werror -ggdb        \*/
 /*  -std=c99 -pedantic            \*/
-/*  -ldb                          \*/
+/*  -ldb  -lreadargs              \*/
 /*  -D${b^^}_MAIN -o $b ${b}.c"   \*/
 /* End: */
