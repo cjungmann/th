@@ -2,6 +2,9 @@
 #include <stdarg.h>
 #include "utils.h"
 
+#include <readargs.h>      // access to main()'s argc for approximate start of stack
+#include <sys/resource.h>  // for getrlimit() in display_stack_report()
+
 /**
  * Invokes a callback with a concatenated string of the array of strings.
  *
@@ -142,6 +145,71 @@ void bdberr(Result result, FILE *file, const char *context)
    }
 }
 
+void display_stack_report(int level)
+{
+   struct rlimit rlim;
+   memset(&rlim, 0, sizeof(rlim));
+
+   int result = getrlimit(RLIMIT_STACK, &rlim);
+
+   unsigned long start = (unsigned long)g_scene.args;
+   unsigned long stack_used;
+   unsigned long end;
+
+   end = (unsigned long)&end;
+
+   if (end > start)
+      stack_used = end - start;
+   else
+      stack_used = start - end;
+
+   if (level > 2)
+   {
+      printf("stack used %lu bytes.\n", stack_used);
+      printf("  starting at %lu\n", start);
+      printf("  ending at %lu\n", (unsigned long)&result);
+      printf("\n");
+   }
+
+   if (level > 1)
+   {
+      printf("Stack rlimit cur: %lu\n", rlim.rlim_cur);
+      printf("Stack rlimit max: %lu\n", rlim.rlim_max);
+      printf("\n");
+   }
+
+   commaize_number(stack_used);
+   printf(" of ");
+   commaize_number(rlim.rlim_cur);
+   printf(" (%f%% of available stack).\n",
+          (double)stack_used * 100.0 / (double)rlim.rlim_cur);
+}
+
+/**
+ * Add commas to printout of integer values.
+ */
+void commaize_number(unsigned long num)
+{
+   if (num > 0)
+   {
+      // recurse to reverse order
+      commaize_number(num / 1000);
+
+      if (num > 1000)
+         printf(",");
+      printf("%lu", num % 1000);
+   }
+}
+
+/**
+ * Doesn't do much, (erase and reuse line), but it's easier
+ * to find and use by making it a simple function.
+ */
+void reuse_terminal_line(void)
+{
+   printf("\x1b[2K\x1b[1G");
+}
+
 #ifdef UTILS_MAIN
 
 #include <stdio.h>
@@ -170,15 +238,20 @@ void demo_strarr_builder(int argc, const char **argv)
 
 int main(int argc, const char **argv)
 {
+   // Initialize g_scene, which is used by display_stack_report()
+   ra_set_scene(argv, argc, NULL, 0);
+
    demo_strarr_builder(argc, argv);
+   display_stack_report(2);
 }
 
 #endif
 
 
 /* Local Variables: */
-/* compile-command: "b=utils; \*/
-/*  cc -Wall -Werror -ggdb        \*/
-/*  -std=c99 -pedantic            \*/
-/*  -D${b^^}_MAIN -o $b ${b}.c"   \*/
+/* compile-command: "b=utils;  \*/
+/*  cc -Wall -Werror -ggdb     \*/
+/*  -std=c99 -pedantic         \*/
+/*  -D${b^^}_MAIN -o $b ${b}.c \*/
+/*  -lreadargs -ldb"           \*/
 /* End: */

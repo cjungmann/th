@@ -28,6 +28,10 @@ Result cycle_cursor(DBC *cursor, DBT *key, cc_user user, void *closure);
 
 void bdberr(Result result, FILE *file, const char *context);
 
+void display_stack_report(int level);
 
+void commaize_number(unsigned long num);
+void reuse_terminal_line(void);
+  
 
 #endif
