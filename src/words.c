@@ -2,8 +2,11 @@
 #include "ivtable.h"
 #include "thesaurus.h"
 #include "parse_thesaurus.h"
+#include "utils.h"
 #include <string.h>
 #include <readargs.h>
+#include <alloca.h>
+#include <limits.h>
 
 const char *thesaurus_name="thesaurus";
 const char *thesaurus_word=NULL;
@@ -11,6 +14,8 @@ int thesaurus_recid=0;
 
 bool flag_import_thesaurus = 0;
 bool flag_dump_thesaurus = 0;
+bool flag_stack_report = 0;
+bool flag_enumerate = 0;
 
 int import_thesaurus(void)
 {
@@ -73,27 +78,201 @@ const char *cycle_color(void)
    return colors[ counter++ % climit ];
 }
 
-void show_thesaurus_word_callback(RecID *list, int length, void *data)
-{
-   TTABS *ttabs = (TTABS*)data;
-   RecID *listend = list + length;
 
-   char buff[64];
-   TREC *trec = (TREC*)buff;
+typedef void (*word_list_user)(const char **list, int length, void *closure);
+
+typedef struct recurse_closure {
+   TTABS          *ttabs;
+   IVTable        *ivt;
+   RecID          *list;
+   RecID          *ptr;
+   RecID          *lend;
+   const char     **wlist;
+   const char     **wptr;
+   int            len;
+   word_list_user user;
+   void           *closure;
+   DBT            *value;
+
+   // Work variables for use in word_list_recursor()
+   Result         result;
+   TREC           *trec;
+   size_t         word_size;
+   char           *buffer;
+} REc;
+
+void word_list_recursor(REc *rec)
+{
+   if (rec->ptr < rec->lend)
+   {
+      rec->result = rec->ivt->get_record_by_recid(rec->ivt, *rec->ptr, rec->value);
+
+      if (rec->result)
+         fprintf(stderr, "Failed to retrieve word number %u.\n", *rec->ptr);
+      else if (rec->value->size > 0)
+      {
+         rec->trec = (TREC*)rec->value->data;
+         rec->word_size = rec->value->size - sizeof(TREC);
+
+         // make copy of word
+         char buffer[rec->word_size + 1];
+         /* char *buffer = (char*)alloca(rec->word_size + 1); */
+         memcpy(buffer, rec->trec->value, rec->word_size);
+         buffer[rec->word_size] = '\0';
+
+         // Save word
+         *rec->wptr = buffer;
+
+         rec->buffer = buffer;
+
+         // (redundant but safe) clear closure of current stack's data:
+         /* rec->result = 0; */
+         /* rec->trec = NULL; */
+         /* rec->word_size = 0; */
+         /* rec->buffer = NULL; */
+
+         // Update word-list pointer only if a new word was stored:
+         rec->wptr++;
+         rec->ptr++;
+         word_list_recursor(rec);
+      }
+      else
+      {
+         rec->ptr++;
+         word_list_recursor(rec);
+      }
+   }
+   else
+   {
+      (*rec->user)(rec->wlist, rec->len, rec->closure);
+   }
+}
+
+void build_word_list_recurse(TTABS *ttabs, RecID *list, int len, word_list_user user, void *closure)
+{
+   const char *wlist[len];
+   DBT value;
+   memset(&value, 0, sizeof(DBT));
+
+   REc  rec = { ttabs, &ttabs->ivt, list, list, list+len, wlist, wlist, len, user, closure, &value };
+   word_list_recursor(&rec);
+}
+
+void build_word_list_alloca(TTABS *ttabs, RecID *list, int len, word_list_user user, void *closure)
+{
+   IVTable *ivt = &ttabs->ivt;
+
+   RecID *listend = list + len;
+
+   const char *wlist[len];
+   memset(wlist, 0, sizeof(wlist));
+   const char **wptr = wlist;
 
    Result result;
+   DBT value;
+   memset(&value, 0, sizeof(DBT));
 
    while (list < listend)
    {
-      if (!(result = TTB.get_word_rec(ttabs, *list, trec, sizeof(buff))))
-         printf(" %s%s\x1b[m", cycle_color(), trec->value);
-      else
-         printf(" %s%u\x1b[m", cycle_color(), *list);
-      
+      if ((result = ivt->get_record_by_recid(ivt, *list, &value)))
+         fprintf(stderr, "Failed to retrieve word number %u.\n", *list);
+      else if (value.size > 0)
+      {
+         TREC *trec = (TREC*)value.data;
+         int vsize = value.size - sizeof(TREC);
+         char *buff = (char*)alloca(vsize + 1);
+         memcpy(buff, trec->value, vsize);
+         buff[vsize] = '\0';
+         *wptr = buff;
+         ++wptr;
+      }
+
       ++list;
    }
 
+   (*user)(wlist, len, closure);
+}
+
+void show_recid_word_list(TTABS *ttabs, RecID *list, int length)
+{
+   char buff[64];
+   TREC *trec = (TREC*)buff;
+
+   RecID *ptr = list;
+   RecID *end = list + length;
+
+   Result result;
+
+   while (ptr < end)
+   {
+      if (!(result = TTB.get_word_rec(ttabs, *ptr, trec, sizeof(buff))))
+         printf(" %s%s\x1b[m", cycle_color(), trec->value);
+      else
+         printf(" %s%u\x1b[m", cycle_color(), *ptr);
+      
+      ++ptr;
+   }
+
    printf("\n");
+}
+
+void show_recid_recid_list(RecID *list, int length)
+{
+   RecID *ptr = list;
+   RecID *end = list + length;
+   const char *preface = "";
+
+   while (ptr < end)
+   {
+      printf("%s%s%u\x1b[m", preface, cycle_color(), *ptr);
+      preface = ", ";
+      ++ptr;
+   }
+   printf("\n");   
+}
+
+void show_word_list(const char **list, int length, void *closure)
+{
+   if (flag_stack_report)
+      display_stack_report(1);
+   else
+   {
+      int curlen, maxlen = 0;
+      const char **ptr, **end = list + length;
+
+      ptr = list;
+      while (ptr < end)
+      {
+         curlen = strlen(*ptr);
+         if (curlen > maxlen)
+            maxlen = curlen;
+
+         ++ptr;
+      }
+
+      ptr = list;
+      while (ptr < end)
+      {
+         printf("%s%s\x1b[m\n", cycle_color(), *ptr);
+         ++ptr;
+      }
+   }
+}
+
+void show_thesaurus_word_callback(TTABS *ttabs, RecID *list, int length, void *data)
+{
+   printf("Making a list of %d words.\n", length);
+
+   /* show_recid_recid_list(list, length); */
+   /* show_recid_word_list(ttabs, list, length); */
+
+   if (flag_stack_report)
+      printf("Stack report for alloca method.\n");
+   build_word_list_alloca(ttabs, list, length, show_word_list, data);
+
+   if (flag_stack_report)
+      printf("Stack report for recursive/vla method.\n");
+   build_word_list_recurse(ttabs, list, length, show_word_list, data);
 }
 
 int show_thesaurus_word(const char *word)
@@ -108,7 +287,7 @@ int show_thesaurus_word(const char *word)
    {
       RecID id = TTB.lookup(&ttabs, word);
       if (id)
-         TTB.get_words(&ttabs, id, show_thesaurus_word_callback);
+         TTB.get_words(&ttabs, id, show_thesaurus_word_callback, NULL);
       else
          fprintf(stderr, "Failed to find \"%s\" in the thesaurus.\n", word);
 
@@ -158,16 +337,91 @@ int thesaurus_word_by_recid(int recid)
    return retval;
 }
 
+typedef struct enumerator_track {
+   int entries;
+   int words;
+   RecID min_syns_id;
+   int min_syns;
+   RecID max_syns_id;
+   int max_syns;
+} ET;
+
+void enumerator_callback(TTABS *ttabs, RecID id, TREC *trec, void *closure)
+{
+   ET *et = (ET*)closure;
+
+   ++et->words;
+
+   reuse_terminal_line();
+   commaize_number(et->words);
+
+   if (trec->is_root)
+   {
+      ++et->entries;
+
+      int scount = TTB.count_synonyms(ttabs, id);
+
+      if (scount < et->min_syns)
+      {
+         et->min_syns = scount;
+         et->min_syns_id = id;
+      }
+
+      if (scount > et->max_syns)
+      {
+         et->max_syns = scount;
+         et->max_syns_id = id;
+      }
+   }
+}
+
+int enumerate_words(void)
+{
+   TTABS ttabs;
+   Result result;
+      
+   TTB.init(&ttabs);
+   if ((result = TTB.open(&ttabs, thesaurus_name)))
+   {
+      printf("Error opening %s: %s.\n", thesaurus_name, db_strerror(result));
+      return 0;
+   }
+   else
+   {
+      ET et;
+      memset(&et, 0, sizeof(ET));
+      et.min_syns = INT_MAX;
+
+      TTB.walk_entries(&ttabs, enumerator_callback, &et);
+
+      char buffmax[80];
+      TTB.get_word_rec(&ttabs, et.max_syns_id, (TREC*)buffmax, sizeof(buffmax));
+      char buffmin[80];
+      TTB.get_word_rec(&ttabs, et.min_syns_id, (TREC*)buffmin, sizeof(buffmin));
+
+      printf("\n");
+      printf("\"%s\" has the fewest synonyms with %d.\n", ((TREC*)buffmin)->value, et.min_syns);
+      printf("\"%s\" has the most synonyms with %d.\n", ((TREC*)buffmax)->value, et.max_syns);
+
+      TTB.close(&ttabs);
+   }
+
+   
+   return 0;
+}
+
 raAction actions[] = {
    {'h', "help", "This help display", &ra_show_help_agent },
 
    {'i', "id", "Search thesaurus word by id", &ra_int_agent, &thesaurus_recid },
+   {'e', "enumerate", "Count synonyms per entry", &ra_flag_agent, &flag_enumerate },
 
    {'T', "import_thesaurus", "Import thesaurus contents", &ra_flag_agent, &flag_import_thesaurus },
    {'t', "thesaurus_word", "Word to be sought in thesaurus", &ra_string_agent, &thesaurus_word },
 
    {'f', "thesaurus_name", "Base name of thesaurus database", &ra_string_agent, &thesaurus_name },
    {'d', "thesaurus_dump", "Dump contents of thesaurus database", &ra_flag_agent, &flag_dump_thesaurus },
+   {'s', "stack_report", "Show stack report for word lists", &ra_flag_agent, &flag_stack_report },
    {-1, "*word", "Show thesaurus entry", &ra_string_agent, &thesaurus_word }
 };
 
@@ -181,6 +435,8 @@ int main(int argc, const char **argv)
          return import_thesaurus();
       else if (flag_dump_thesaurus)
          return dump_thesaurus();
+      else if (flag_enumerate)
+         return enumerate_words();
       else if (thesaurus_word)
          return show_thesaurus_word(thesaurus_word);
       else if (thesaurus_recid)
