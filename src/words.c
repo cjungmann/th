@@ -1,12 +1,14 @@
+#include <string.h>
+#include <readargs.h>
+#include <alloca.h>
+#include <limits.h>
+
 #include "bdb.h"
 #include "ivtable.h"
 #include "thesaurus.h"
 #include "parse_thesaurus.h"
 #include "utils.h"
-#include <string.h>
-#include <readargs.h>
-#include <alloca.h>
-#include <limits.h>
+#include "term.h"
 
 const char *thesaurus_name="thesaurus";
 const char *thesaurus_word=NULL;
@@ -16,7 +18,15 @@ bool flag_import_thesaurus = 0;
 bool flag_dump_thesaurus = 0;
 bool flag_stack_report = 0;
 bool flag_enumerate = 0;
+bool flag_verbose = 0;
 
+/**
+ * Fulfills command line option -i.
+ *
+ * Typically, this will be called only once, but it may also
+ * be used repeatedly while experimenting with how the data
+ * is organized.
+ */
 int import_thesaurus(void)
 {
    int retval = 1;
@@ -29,7 +39,9 @@ int import_thesaurus(void)
       TTB.init(&ttabs);
       if (!(result = TTB.open(&ttabs, thesaurus_name)))
       {
-         read_thesaurus_file(f, save_thesaurus_word, &ttabs);
+         read_thesaurus_file(f, flag_verbose, save_thesaurus_word, &ttabs);
+
+         
          TTB.close(&ttabs);
       }
 
@@ -39,6 +51,12 @@ int import_thesaurus(void)
    return retval;
 }
 
+/**
+ * Fulfills command-line option -d
+ *
+ * This is strictly a debugging function.  It changes as
+ * necessary to accomplish temporary debugging goals.
+ */
 bool dump_thesaurus(void)
 {
    Result result;
@@ -60,27 +78,22 @@ bool dump_thesaurus(void)
    return 1;
 }
 
-const char *cycle_color(void)
-{
-   static const char *colors[] = {
-      "\x1b[31;1m",
-      "\x1b[32;1m",
-      "\x1b[33;1m",
-      "\x1b[34;1m",
-      "\x1b[35;1m",
-      "\x1b[36;1m",
-      "\x1b[37;1m"
-   };
 
-   static int counter = 0;
-   static int climit = sizeof(colors) / sizeof(colors[0]);
-
-   return colors[ counter++ % climit ];
-}
-
-
+/**
+ * Internal function pointer typedef
+ *
+ * Using a typedef allows me to try different methods
+ * of collecting words, mainly using *alloc* or AVOIDING
+ * *alloca* by using recursion and VLA instead.
+ */
 typedef void (*word_list_user)(const char **list, int length, void *closure);
 
+/**
+ * This "closure" contains all the variables needed by
+ * the recursive function *word_list_recursor*.  Using
+ * a pointer to an instance of this struct should minimize
+ * the stack frame penalty of the deeply-recursuve function.
+ */
 typedef struct recurse_closure {
    TTABS          *ttabs;
    IVTable        *ivt;
@@ -101,6 +114,10 @@ typedef struct recurse_closure {
    char           *buffer;
 } REc;
 
+/**
+ * Using recursion and VLA instead of *alloca* to make a list
+ * of related words.
+ */
 void word_list_recursor(REc *rec)
 {
    if (rec->ptr < rec->lend)
@@ -148,16 +165,29 @@ void word_list_recursor(REc *rec)
    }
 }
 
+/**
+ * Initialize the data and launch the recursive word compilation function.
+ */
 void build_word_list_recurse(TTABS *ttabs, RecID *list, int len, word_list_user user, void *closure)
 {
    const char *wlist[len];
    DBT value;
    memset(&value, 0, sizeof(DBT));
 
+   // This struct serves all computation needs of word_list_recursor()
+   // in order to save stack space (only one parameter, no local variables).
    REc  rec = { ttabs, &ttabs->ivt, list, list, list+len, wlist, wlist, len, user, closure, &value };
+
    word_list_recursor(&rec);
 }
 
+/**
+ * Related word-list collector, provides the list through
+ * the callback function *user*.
+ *
+ * This function is much simpler than the recursion+VLA method,
+ * and much more memory efficient, as comparison testing shows.
+ */
 void build_word_list_alloca(TTABS *ttabs, RecID *list, int len, word_list_user user, void *closure)
 {
    IVTable *ivt = &ttabs->ivt;
@@ -193,6 +223,10 @@ void build_word_list_alloca(TTABS *ttabs, RecID *list, int len, word_list_user u
    (*user)(wlist, len, closure);
 }
 
+/**
+ * One callback function option for showing the results of one
+ * of the related word collection functions.
+ */
 void show_recid_word_list(TTABS *ttabs, RecID *list, int length)
 {
    char buff[64];
@@ -266,15 +300,22 @@ void show_thesaurus_word_callback(TTABS *ttabs, RecID *list, int length, void *d
    /* show_recid_recid_list(list, length); */
    /* show_recid_word_list(ttabs, list, length); */
 
+   /* word_list_user = show_word_list; // local, for debugging */
+   word_list_user wlu = show_words;     // production, from term.c
+
    if (flag_stack_report)
       printf("Stack report for alloca method.\n");
-   build_word_list_alloca(ttabs, list, length, show_word_list, data);
+   build_word_list_alloca(ttabs, list, length, wlu, data);
 
    if (flag_stack_report)
       printf("Stack report for recursive/vla method.\n");
-   build_word_list_recurse(ttabs, list, length, show_word_list, data);
+   build_word_list_recurse(ttabs, list, length, wlu, data);
 }
 
+/**
+ * Fulfills command line option -t (or non-option argument)
+ * to show the list of words related to the *word* argument.
+ */
 int show_thesaurus_word(const char *word)
 {
    // Eventually, we'll show all the words, so we need to
@@ -352,7 +393,7 @@ void enumerator_callback(TTABS *ttabs, RecID id, TREC *trec, void *closure)
 
    ++et->words;
 
-   reuse_terminal_line();
+   printf("\x1b[1G");
    commaize_number(et->words);
 
    if (trec->is_root)
@@ -422,6 +463,7 @@ raAction actions[] = {
    {'f', "thesaurus_name", "Base name of thesaurus database", &ra_string_agent, &thesaurus_name },
    {'d', "thesaurus_dump", "Dump contents of thesaurus database", &ra_flag_agent, &flag_dump_thesaurus },
    {'s', "stack_report", "Show stack report for word lists", &ra_flag_agent, &flag_stack_report },
+   {'v', "verbose", "Verbose output", &ra_flag_agent, &flag_verbose },
    {-1, "*word", "Show thesaurus entry", &ra_string_agent, &thesaurus_word }
 };
 
