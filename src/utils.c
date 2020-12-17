@@ -196,8 +196,9 @@ void commaize_number(unsigned long num)
       commaize_number(num / 1000);
 
       if (num > 1000)
-         printf(",");
-      printf("%lu", num % 1000);
+         printf(",%03lu", num % 1000);
+      else
+         printf("%lu", num);
    }
 }
 
