@@ -12,19 +12,25 @@ bool printing_word_user(const char *str, int size, int newline, void *data)
    return 1;
 }
 
-void read_thesaurus_file(FILE *f, word_user_f use_word, void *data)
+void read_thesaurus_file(FILE *f, bool verbose, word_user_f use_word, void *data)
 {
    char buffer[1024];
    char *buffend = buffer + sizeof(buffer);
 
    char *str, *ptr;
+   int slen;
    int bread;
    int initial_word;
    int length_of_partial_word;
 
+   int words_read = 0;
+
    // Hand-set for first time through:
    initial_word = 1;
    str = ptr = buffer;
+
+   if (verbose)
+      printf("Importing thesaurus words.\n");
 
    while ((bread = fread(ptr, 1, buffend-ptr, f)) > 0)
    {
@@ -48,8 +54,20 @@ void read_thesaurus_file(FILE *f, word_user_f use_word, void *data)
             if (*(endptr-1)=='\r')
                --endptr;
 
+            slen = (int)(endptr - str);
+
+            if (verbose)
+            {
+               if ((++words_read % 100) == 0)
+               {
+                  printf("\x1b[2K\x1b[1G");   // erase line, then move to column 1 of current line
+                  commaize_number(words_read);
+                  printf(" %.*s", slen, str);
+               }
+            }
+
             // Exit loop if use_word function returns 0
-            if (!(*use_word)(str, endptr-str, initial_word, data))
+            if (!(*use_word)(str, slen, initial_word, data))
                break;
 
             // Newline terminator indicates next word is a line-leading word:
@@ -63,6 +81,9 @@ void read_thesaurus_file(FILE *f, word_user_f use_word, void *data)
       memmove(buffer, str, length_of_partial_word);
       ptr = buffer + length_of_partial_word;
    }
+
+   if (verbose)
+      printf("\n");
 }
 
 #ifdef PARSE_MAIN
