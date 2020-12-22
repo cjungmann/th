@@ -2,6 +2,12 @@
 
 TARGET = th
 
+TH_HOME=/usr/local/bin
+DB_HOME=/var/local/lib/th
+DB_NAME=thesaurus
+ETC_TARGET=/etc/th.conf
+ETC_CONTENT="${DB_HOME}/${DB_NAME}"
+
 CFLAGS = -Wall -Werror -std=c99 -pedantic -m64 -ggdb
 SRC=./src/
 
@@ -9,14 +15,35 @@ LIB_SOURCE != ls -1 ${SRC}*.c
 LIB_MODULES != ls -1 ${SRC}*.c | sed 's/\.c/\.o/g'
 LIBS = -ldb -lreadargs
 
-
-all: ${TARGET}
+.PHONY: all
+all: ${TARGET} thesaurus.db
 
 ${TARGET}: ${LIB_MODULES}
 	${CC} ${CFLAGS} -o $@ ${LIB_MODULES} ${LIBS}
 
 %.o: %.c
 	${CC} ${CFLAGS} -c -o $@ $<
+
+.PHONY: thesaurus.db
+thesaurus.db : files/mthesaur.txt
+	@echo "Importing Moby Thesaurus into *th*"
+	./th -Tv
+
+files/mthesaur.txt:
+	@echo "Downloading Moby Thesaurus source data from Gutenberg.org"
+	install -d files
+	wget -nc -P files ftp://ftp.ibiblio.org/pub/docs/books/gutenberg/3/2/0/3202/files.zip
+	unzip -n files/files.zip
+
+install:
+	install -D --mode=755 ${TARGET}        ${TH_HOME}
+	install -D --mode=744 -t ${DB_HOME}  ${DB_NAME}.*
+	echo -e "${ETC_CONTENT}" > "${ETC_TARGET}"
+
+uninstall:
+	rm -f "/usr/local/bin/${TARGET}"
+	rm -f "${ETC_TARGET}"
+	rm -rf "${DB_HOME}"
 
 clean:
 	rm -f th
