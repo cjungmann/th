@@ -28,9 +28,7 @@ Result db_open_imp(DB **ret_db,
          goto abandon_db;
    }
 
-   DBFlags dbflags = 0;
-   if (create)
-      dbflags |= DB_CREATE | DB_OVERWRITE;
+   DBFlags dbflags = (create ? DB_CREATE|DB_OVERWRITE : DB_RDONLY);
 
    if ((result = db->open(db, NULL, name, NULL, type, dbflags, 0664)))
       goto abandon_db;
@@ -91,8 +89,6 @@ Result O_Queue(Table *table, const char *name, bool create, RecLen reclen)
       table->close = db_close_imp;
       table->add = db_add_record_recno;
    }
-   else
-      db->close(db, 0);
 
    return result;
 }
@@ -108,8 +104,6 @@ Result O_Recno(Table *table, const char *name, bool create, RecLen reclen)
       table->close = db_close_imp;
       table->add = db_add_record_recno;
    }
-   else
-      db->close(db, 0);
 
    return result;
 }
@@ -124,8 +118,6 @@ Result O_Index_S2I(Table *table, const char *name, bool create, RecLen reclen)
       table->close = db_close_imp;
       table->add = db_add_record_basic;
    }
-   else
-      db->close(db, 0);
 
    return result;
 }
@@ -140,8 +132,6 @@ Result O_Index_I2I(Table *table, const char *name, bool create, RecLen reclen)
       table->close = db_close_imp;
       table->add = db_add_record_basic;
    }
-   else
-      db->close(db, 0);
 
    return result;
 }
@@ -309,6 +299,8 @@ void process_single_table(const char **ptr, const char **end)
 
       table.close(&table);
    }
+   else
+      table.db->err(table.db, result, "Opening mytable.db.");
 }
 
 
