@@ -1,6 +1,10 @@
 #include "rrtable.h"
 #include <string.h>
 
+/**
+ * If create is TRUE, the table will be opened in DB_CREATE mode,
+ * if create is FALSE, it will be opened in DB_RDONLY mode.
+ */
 Result rrt_open(DB **db_out, bool create, const char *name)
 {
    Result result;
@@ -12,7 +16,7 @@ Result rrt_open(DB **db_out, bool create, const char *name)
    if ((result = db->set_flags(db, DB_DUPSORT)))
       goto abandon_db;
 
-   DBFlags dbflags = create ? (DB_CREATE | DB_OVERWRITE) : 0;
+   DBFlags dbflags = create ? (DB_CREATE | DB_OVERWRITE) : DB_RDONLY;
 
    if ((result = db->open(db, NULL, name, NULL, DB_BTREE, dbflags, 0664)))
       goto abandon_db;
