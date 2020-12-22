@@ -5,6 +5,7 @@
 
 #include <termios.h>  // for tcgetattr()
 #include <unistd.h>   // for tcgetattr(), STDOUT_FILENO
+#include <errno.h>
 
 #include "term.h"
 
@@ -97,12 +98,6 @@ void show_words(const char **words, int count, void *closure)
    char format[20];
    sprintf(format, " %%-%ds   ", maxword);
 
-   printf("Screen is %d character wide.\n", wide);
-   printf("The maximum word width is %d.\n", maxword);
-   printf("Each word will be placed in a %d character cell.\n", wordcell);
-   printf("That should result in %d columns.\n", wide / wordcell);
-   printf("We'll use \"%s\" as the format string.\n", format);
-
    int col;
    const char **ptr = words;
    const char **end = words + count;
@@ -179,10 +174,38 @@ void test_ScrSize_type(void)
    printf("ssize is %x (%u : %u)\n", ssize, SS_WIDE(ssize), SS_HIGH(ssize));
 }
 
+void test_tl_2(void)
+{
+   puts((isatty(STDIN_FILENO)) ? "stdin IS ATTY" : "stdin IS NOT ATTY");
+   puts((isatty(STDOUT_FILENO)) ? "stdout IS ATTY" : "stdout IS NOT ATTY");
+   
+   int result;
+   struct { char code; short vals[5]; } sbuff = {2};
+   result = ioctl(STDIN_FILENO, TIOCLINUX, &sbuff);
+   printf("Result was %d (%s).\n", result, strerror(errno));
+}
+
+void test_tl_8(void)
+{
+   int result;
+   char buffer[220 * 52];
+   *buffer = 8;
+   result = ioctl(STDIN_FILENO, TIOCLINUX, buffer);
+   printf("Result was %d (%s).\n", result, strerror(errno));
+}
+
+void test_TIOCLINUX(void)
+{
+   test_tl_2();
+   test_tl_8();
+}
+
 
 int main(int argc, const char **argv)
 {
-   show_words(wordlist, sizeof(wordlist)/sizeof(wordlist[0]), NULL);
+   /* show_words(wordlist, sizeof(wordlist)/sizeof(wordlist[0]), NULL); */
+
+   test_TIOCLINUX();
    return 0;
 }
 
