@@ -10,7 +10,7 @@
 #include "utils.h"
 #include "term.h"
 
-const char *thesaurus_name="thesaurus";
+// thesaurus_name moved to thesaurus.c
 const char *thesaurus_word=NULL;
 int thesaurus_recid=0;
 
@@ -35,12 +35,14 @@ int import_thesaurus(void)
    {
       Result result;
       TTABS ttabs;
+
+      const char *tname = thesaurus_name ? thesaurus_name : "thesaurus";
       
       TTB.init(&ttabs);
-      if (!(result = TTB.open(&ttabs, thesaurus_name)))
+      if (!(result = TTB.open(&ttabs, tname, 1)))
       {
          read_thesaurus_file(f, flag_verbose, save_thesaurus_word, &ttabs);
-
+         retval = 0;
          
          TTB.close(&ttabs);
       }
@@ -62,7 +64,7 @@ bool dump_thesaurus(void)
    Result result;
    IVTable ivt;
    init_IVTable(&ivt);
-   if (!(result = ivt.open(&ivt, thesaurus_name)))
+   if (!(result = ivt.open(&ivt, thesaurus_name, 0)))
    {
       dump_table(&ivt.t_records, thesaurus_dumpster, NULL);
 
@@ -293,9 +295,17 @@ void show_word_list(const char **list, int length, void *closure)
    }
 }
 
+struct stwc_closure {
+   TTABS      *ttabs;
+   const char *word;
+   RecID      id;
+};
+
 void show_thesaurus_word_callback(TTABS *ttabs, RecID *list, int length, void *data)
 {
-   printf("Making a list of %d words.\n", length);
+   struct stwc_closure *closure = (struct stwc_closure*)data;
+   
+   printf("Displaying a list of %d synonyms for %s.\n", length, closure->word);
 
    /* show_recid_recid_list(list, length); */
    /* show_recid_word_list(ttabs, list, length); */
@@ -305,11 +315,14 @@ void show_thesaurus_word_callback(TTABS *ttabs, RecID *list, int length, void *d
 
    if (flag_stack_report)
       printf("Stack report for alloca method.\n");
-   build_word_list_alloca(ttabs, list, length, wlu, data);
+
+   build_word_list_alloca(ttabs, list, length, wlu, NULL);
 
    if (flag_stack_report)
+   {
       printf("Stack report for recursive/vla method.\n");
-   build_word_list_recurse(ttabs, list, length, wlu, data);
+      build_word_list_recurse(ttabs, list, length, wlu, NULL);
+   }
 }
 
 /**
@@ -324,11 +337,15 @@ int show_thesaurus_word(const char *word)
    TTABS ttabs;
       
    TTB.init(&ttabs);
-   if (!(result = TTB.open(&ttabs, thesaurus_name)))
+   if (!(result = open_existing_thesaurus(&ttabs)))
    {
       RecID id = TTB.lookup(&ttabs, word);
+
       if (id)
-         TTB.get_words(&ttabs, id, show_thesaurus_word_callback, NULL);
+      {
+         struct stwc_closure closure = { &ttabs, word, id };
+         TTB.get_words(ttabs.db_r2w, &ttabs, id, show_thesaurus_word_callback, &closure);
+      }
       else
          fprintf(stderr, "Failed to find \"%s\" in the thesaurus.\n", word);
 
@@ -342,24 +359,26 @@ int show_thesaurus_word(const char *word)
 int thesaurus_word_by_recid(int recid)
 {
    int retval = 1;
-   
-   // Only showing the word for now, use
-   // the small part of thesaurus data
+
+   TTABS ttabs;
    Result result;
-   IVTable ivt;
-   init_IVTable(&ivt);
-   if ((result = ivt.open(&ivt, thesaurus_name)))
+      
+   TTB.init(&ttabs);
+
+   if ((result = open_existing_thesaurus(&ttabs)))
       goto abandon_function;
 
+   IVTable *ivt = &ttabs.ivt;
+   
    DBT value;
    memset(&value, 0, sizeof(DBT));
-   if ((result = ivt.get_record_by_recid(&ivt, recid, &value)))
+   if ((result = ivt->get_record_by_recid(ivt, recid, &value)))
    {
       if (result == DB_NOTFOUND)
          printf("RecID %d was not found.\n", recid);
       else
       {
-         DB *db = ivt.get_records_db(&ivt);
+         DB *db = ivt->get_records_db(ivt);
          db->err(db, result, "Index search failed.");
       }
    }
@@ -372,7 +391,7 @@ int thesaurus_word_by_recid(int recid)
       retval = 0;
    }
 
-   ivt.close(&ivt);
+   TTB.close(&ttabs);
 
   abandon_function:
    return retval;
@@ -422,7 +441,7 @@ int enumerate_words(void)
    Result result;
       
    TTB.init(&ttabs);
-   if ((result = TTB.open(&ttabs, thesaurus_name)))
+   if ((result = open_existing_thesaurus(&ttabs)))
    {
       printf("Error opening %s: %s.\n", thesaurus_name, db_strerror(result));
       return 0;
@@ -452,19 +471,20 @@ int enumerate_words(void)
 }
 
 raAction actions[] = {
-   {'h', "help", "This help display", &ra_show_help_agent },
+   {'h', "help",             "This help display", &ra_show_help_agent },
 
-   {'i', "id", "Search thesaurus word by id", &ra_int_agent, &thesaurus_recid },
-   {'e', "enumerate", "Count synonyms per entry", &ra_flag_agent, &flag_enumerate },
+   {-1, "*word",             "Show thesaurus entry", &ra_string_agent, &thesaurus_word },
+   {'t', "thesaurus_word",   "Word to be sought in thesaurus", &ra_string_agent, &thesaurus_word },
 
    {'T', "import_thesaurus", "Import thesaurus contents", &ra_flag_agent, &flag_import_thesaurus },
-   {'t', "thesaurus_word", "Word to be sought in thesaurus", &ra_string_agent, &thesaurus_word },
 
-   {'f', "thesaurus_name", "Base name of thesaurus database", &ra_string_agent, &thesaurus_name },
-   {'d', "thesaurus_dump", "Dump contents of thesaurus database", &ra_flag_agent, &flag_dump_thesaurus },
-   {'s', "stack_report", "Show stack report for word lists", &ra_flag_agent, &flag_stack_report },
-   {'v', "verbose", "Verbose output", &ra_flag_agent, &flag_verbose },
-   {-1, "*word", "Show thesaurus entry", &ra_string_agent, &thesaurus_word }
+   {'f', "thesaurus_name",   "Change base name of thesaurus database (import and usage)", &ra_string_agent, &thesaurus_name },
+   {'v', "verbose",          "Verbose output for import", &ra_flag_agent, &flag_verbose },
+
+   {'e', "enumerate",        "DEBUGGING: Count synonyms per entry", &ra_flag_agent, &flag_enumerate },
+   {'d', "thesaurus_dump",   "DEBUGGING; Dump contents of thesaurus database", &ra_flag_agent, &flag_dump_thesaurus },
+   {'i', "id",               "DEBUGGING: Search thesaurus word by id", &ra_int_agent, &thesaurus_recid },
+   {'s', "stack_report",     "DEBUGGING: Show stack report for word lists", &ra_flag_agent, &flag_stack_report }
 };
 
 int main(int argc, const char **argv)
