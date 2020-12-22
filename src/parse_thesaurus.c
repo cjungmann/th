@@ -58,11 +58,12 @@ void read_thesaurus_file(FILE *f, bool verbose, word_user_f use_word, void *data
 
             if (verbose)
             {
-               if ((++words_read % 100) == 0)
+               if ((++words_read % 250) == 0)
                {
-                  printf("\x1b[2K\x1b[1G");   // erase line, then move to column 1 of current line
+                  /* printf("\x1b[2K\x1b[1G");   // erase line, then move to column 1 of current line */
+                  printf("\x1b[1G");   // erase line, then move to column 1 of current line
                   commaize_number(words_read);
-                  printf(" %.*s", slen, str);
+                  printf(" %.*s\x1b[K", slen, str);
                }
             }
 
