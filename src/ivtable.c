@@ -3,7 +3,7 @@
 #include <string.h>
 #include "ivtable.h"
 
-Result ivt_open_imp(IVTable *t, const char *name)
+Result ivt_open_imp(IVTable *t, const char *name, bool create)
 {
    Result result;
    int namelen = strlen(name);
@@ -16,10 +16,10 @@ Result ivt_open_imp(IVTable *t, const char *name)
    memcpy(name_index, name, namelen);
    strcpy(&name_index[namelen], ".k2r");
 
-   if ((result = open_table(&t->t_records, t->opener, name_records, 1, t->reclen)))
+   if ((result = open_table(&t->t_records, t->opener, name_records, create, t->reclen)))
       goto abandon_function;
 
-   if ((result = open_table(&t->t_index, O_Index_S2I, name_index, 1, 0)))
+   if ((result = open_table(&t->t_index, O_Index_S2I, name_index, create, 0)))
       goto abandon_root;
 
    return result;
@@ -28,6 +28,10 @@ Result ivt_open_imp(IVTable *t, const char *name)
    t->t_records.close(&t->t_records);
 
   abandon_function:
+
+   if (result)
+      fprintf(stderr, "Failed to open \"%s\": %s", name, db_strerror(result));
+
    return result;
 }
 

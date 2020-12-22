@@ -5,7 +5,7 @@
 
 typedef struct ivtable_t IVTable;
 
-typedef Result(*ivt_open)          (IVTable *t, const char *name);
+typedef Result(*ivt_open)          (IVTable *t, const char *name, bool create);
 typedef void  (*ivt_close)         (IVTable *t);
 typedef Result(*ivt_get_recid_raw) (IVTable *t, RecID *id, DBT *key);
 typedef Result(*ivt_add_record_raw)(IVTable *t, RecID *id, DBT *key, DBT *value);
