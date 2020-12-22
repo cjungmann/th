@@ -3,6 +3,8 @@
 
 #include "bdb.h"
 
+extern const char *thesaurus_name;
+
 typedef struct _tword_head {
    bool     is_root;
    uint32_t count;
@@ -18,24 +20,14 @@ typedef struct _thesaurus_tables {
 typedef void (*recid_list_user)(TTABS *ttabs, RecID *list, int len, void *closure);
 typedef void (*tword_user)(TTABS *ttabs, RecID id, TREC *trec, void *closure);
 
-typedef Result (*i2i_open)(DB **db, bool create, const char *name, const char *ext);
-typedef Result (*i2i_add_link)(DB **db, RecID left, RecID right);
-typedef Result (*i2i_get_list)(DB **db, RecID id, recid_list_user user, void *closure);
-
-typedef struct i2i_class {
-   i2i_open     open;
-   i2i_add_link add_link;
-   i2i_get_list get_list;
-} I2I_Class;
-
-
 typedef void   (*ttabs_init)           (TTABS *ttabs);
-typedef Result (*ttabs_open)           (TTABS *ttabs, const char *name);
+typedef Result (*ttabs_open)           (TTABS *ttabs, const char *name, bool create);
 typedef void   (*ttabs_close)          (TTABS *ttabs);
 typedef Result (*ttabs_add_word)       (TTABS *ttabs, const char *str, int size, bool newline);
 typedef Result (*ttabs_get_word_rec)   (TTABS *ttabs, RecID id, TREC *buffer, DataSize size);
 typedef RecID  (*ttabs_lookup)         (TTABS *ttabs, const char *str);
-typedef Result (*ttabs_get_words)      (TTABS *ttabs, RecID id, recid_list_user user, void *closure);
+typedef Result (*ttabs_get_words)      (DB *db, TTABS *ttabs, RecID id,
+                                        recid_list_user user, void *closure);
 typedef Result (*ttabs_walk_entries)   (TTABS *ttabs, tword_user user, void *closure);
 typedef int    (*ttabs_count_synonyms) (TTABS *ttabs, RecID id);
 
@@ -55,6 +47,8 @@ typedef struct ttabs_class {
 } TTABS_Class;
 
 extern TTABS_Class TTB;
+
+Result open_existing_thesaurus(TTABS *ttabs);
 
 
 

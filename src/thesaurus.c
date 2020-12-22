@@ -4,16 +4,27 @@
 #include "thesaurus.h"
 #include "rrtable.h"
 
-#include <string.h>   // for memset()
+#include <string.h>    // for memset()
+
+#include <sys/types.h> // for stat()
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include <ctype.h>     // for isspace()
+
+#include <fcntl.h>     // for open()
+#include <errno.h>     // ENOENT return value
+
+const char *thesaurus_name = NULL;
 
 // "class" member functions, for TTABS_Class instance TTB
 void   ttabs_init_imp(TTABS *ttabs);
-Result ttabs_open_imp(TTABS *ttabs, const char *name);
+Result ttabs_open_imp(TTABS *ttabs, const char *name, bool create);
 void   ttabs_close_imp(TTABS *ttabs);
 Result ttabs_add_word_imp(TTABS *ttabs, const char *str, int size, bool newline);
 Result ttabs_get_word_rec_imp(TTABS *ttabs, RecID id, TREC *buffer, DataSize size);
 RecID  ttabs_lookup_imp(TTABS *ttabs, const char *str);
-Result ttabs_get_words_imp(TTABS *ttabs, RecID id, recid_list_user user, void *closure);
+Result ttabs_get_words_imp(DB *db, TTABS *ttabs, RecID id, recid_list_user user, void *closure);
 Result ttabs_walk_entries_imp(TTABS *ttabs, tword_user user, void *closure);
 int ttabs_count_synonyms_imp(TTABS *ttabs, RecID id);
 
@@ -41,18 +52,19 @@ void ttabs_init_imp(TTABS *ttabs)
    ttabs->db_w2r = NULL;
 }
 
-Result ttabs_open_imp(TTABS *ttabs, const char *name)
+Result ttabs_open_imp(TTABS *ttabs, const char *name, bool create)
 {
    DB *db_r2w, *db_w2r;
    Result result;
    IVTable *ivt = &ttabs->ivt;
-   if ((result = ivt->open(ivt, name)))
+
+   if ((result = ivt->open(ivt, name, create)))
       goto abandon_function;
 
-   if ((result = open_linker(&db_r2w, 1, name, "r2w")))
+   if ((result = open_linker(&db_r2w, create, name, "r2w")))
       goto abandon_ivt;
 
-   if ((result = open_linker(&db_w2r, 1, name, "w2r")))
+   if ((result = open_linker(&db_w2r, create, name, "w2r")))
       goto abandon_r2w;
 
    ttabs->db_r2w = db_r2w;
@@ -265,10 +277,8 @@ bool get_words_callback(DBT *key, DBT *value, void *closure)
       return 0;
 }
 
-Result ttabs_get_words_imp(TTABS *ttabs, RecID id, recid_list_user user, void *closure)
+Result ttabs_get_words_imp(DB *db, TTABS *ttabs, RecID id, recid_list_user user, void *closure)
 {
-   DB *db = ttabs->db_r2w;
-
    GWC gwc = { id, user, closure };
 
    DBC *cursor;
@@ -371,7 +381,7 @@ void i2i_opener(const char *path, void *data)
 {
    DBO *dbo = (DBO*)data;
    DB *db;
-   if (!(dbo->result = rrt_open(&db, 1, path)))
+   if (!(dbo->result = rrt_open(&db, dbo->create, path)))
       dbo->db = db;
 }
 
@@ -466,6 +476,51 @@ bool thesaurus_dumpster(DBT *key, DBT *value, void *data)
    return 1;
 }
 
+/**
+ * This function tries to find the best version of the
+ * thesaurus, with priorities being:
+ * 1. Command-line thesaurus name (-f/thesaurus_name)
+ * 2. Contents of /etc/th.conf
+ * 3. ./thesaurus.db in PWD
+ */
+Result open_existing_thesaurus(TTABS *ttabs)
+{
+   if (thesaurus_name)
+      return TTB.open(ttabs, thesaurus_name, 0);
+   else
+   {
+      struct stat fstat;
+      memset(&fstat, 0, sizeof(fstat));
+      int result = stat("/etc/th.conf", &fstat);
+      if (result == 0)
+      {
+         int bytesread, nlen = fstat.st_size;
+         char buff[nlen+1];
+         int fh = open("/etc/th.conf", O_RDONLY);
+         if (fh)
+         {
+            bytesread = read(fh, &buff, fstat.st_size);
+            close(fh);
+
+            if (bytesread == fstat.st_size)
+            {
+               // Back-off spaces (newline) and terminate after last non-space:
+               char *end = buff + nlen-1;
+               while (isspace(*end))
+                  --end;
+               *(end+1) = '\0';
+
+               return TTB.open(ttabs, buff, 0);
+            }
+         }
+      }
+
+      return TTB.open(ttabs, "thesaurus", 0);
+   }
+
+   return ENOENT;
+}
+
 #ifdef THESAURUS_MAIN
 
 #include <stdio.h>
@@ -481,7 +536,7 @@ void test_TTABS_opener(void)
    TTABS ttabs;
    TTB.init(&ttabs);
 
-   if ((result = TTB.open(&ttabs, tname)))
+   if ((result = TTB.open(&ttabs, tname, 0)))
       printf("Failed to build \"%s\".\n", tname);
    else
       printf("Successfully created \"%s\".\n", tname);
