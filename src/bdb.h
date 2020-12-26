@@ -10,8 +10,8 @@ typedef unsigned long u_long;
 typedef u_int32_t RecID;
 typedef u_int32_t RecLen;
 typedef u_int32_t DataSize;
-typedef u_int32_t boolean, bool;
 typedef u_int32_t DBFlags;
+typedef int       boolean, bool;
 typedef int       Result;
 
 // Bundle key and value for ease of setting and passing
