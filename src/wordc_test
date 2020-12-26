@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+
+comptest_raw()
+{
+   echo "Main test: read and print by line to wordc_test1.txt,"
+   echo "then compare source with wordc_test1.txt with *diff*."
+   echo 
+   echo "Reading file $1"
+   ./wordc -r -i "$1" > wordc_test1.txt
+   echo "Comparing $1 with wordc_test1.txt"
+   diff "$1" wordc_test1.txt
+   if [ $? -eq 0 ]; then
+       echo "The files are identical"
+   fi
+   echo
+   rm wordc_test1.txt
+}
+
+comptest_interp()
+{
+   echo "Interpretation test: read and parse then print by line to wordc_test2.txt,"
+   echo "then compare source with wordc_test2.txt with *diff*."
+   echo 
+   echo "Reading file $1"
+   ./wordc -i "$1" > wordc_test2.txt
+   echo "Comparing $1 with wordc_test2.txt"
+   diff "$1" wordc_test2.txt
+   if [ $? -eq 0 ]; then
+       echo "The files are identical"
+   fi
+   echo
+   rm wordc_test2.txt
+}
+
+comptest_commaized()
+{
+   echo "Control test: read and parse then print by line to wordc_test3.txt,"
+   echo "adding commas to numbers.  Then compare source with wordc_test3.txt with *diff*."
+   echo "This test should fail because the numbers won't match."
+   echo 
+   echo "Reading file $1"
+   ./wordc -ci "$1" > wordc_test3.txt
+   echo "Comparing $1 with wordc_test3.txt"
+   diff "$1" wordc_test3.txt
+   if [ $? -eq 0 ]; then
+       echo "The files are identical"
+   else
+       echo "The files are different (duh, ya just saw the diff report)."
+   fi
+   echo
+   rm wordc_test3.txt
+}
+
+declare filename="../files/count_1w.txt"
+
+if [ $@ -gt 0 ]; then
+   filename="$1"
+fi
+
+comptest_raw "$filename"
+comptest_interp "$filename"
+comptest_commaized "$filename"
