@@ -17,7 +17,7 @@ unsigned RFL_bufflen = 128;
 /**
  * Returns 0 for success, the errno value if it fails.
  */
-int read_handle_lines(int fh, line_user user, void *closure)
+int read_handle_lines(int fh, line_user_f user, void *closure)
 {
    char buffer[RFL_bufflen];
    char *buffend = buffer + sizeof(buffer);
@@ -113,7 +113,7 @@ int read_handle_lines(int fh, line_user user, void *closure)
    return 0;
 }
 
-int read_file_lines(const char *filepath, line_user user, void *closure)
+int read_file_lines(const char *filepath, line_user_f user, void *closure)
 {
    int errnum = 0;
    int fh = open(filepath, O_RDONLY);
