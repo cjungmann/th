@@ -16,7 +16,7 @@ LIB_MODULES != ls -1 ${SRC}*.c | sed 's/\.c/\.o/g'
 LIBS = -ldb -lreadargs
 
 .PHONY: all
-all: ${TARGET} thesaurus.db
+all: ${TARGET} thesaurus.db files/count_1w.txt
 
 ${TARGET}: ${LIB_MODULES}
 	${CC} ${CFLAGS} -o $@ ${LIB_MODULES} ${LIBS}
@@ -34,6 +34,10 @@ files/mthesaur.txt:
 	install -d files
 	wget -nc -P files ftp://ftp.ibiblio.org/pub/docs/books/gutenberg/3/2/0/3202/files.zip
 	unzip -n files/files.zip
+
+files/count_1w.txt:
+	@echo "Downloading word count document from norvig.com"
+	wget -nc -P files https://norvig.com/ngrams/count_1w.txt
 
 install:
 	install -D --mode=755 ${TARGET}        ${TH_HOME}
