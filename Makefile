@@ -24,7 +24,6 @@ ${TARGET}: ${LIB_MODULES}
 %.o: %.c
 	${CC} ${CFLAGS} -c -o $@ $<
 
-.PHONY: thesaurus.db
 thesaurus.db : files/mthesaur.txt
 	@echo "Importing Moby Thesaurus into *th*"
 	./th -Tv
