@@ -1,4 +1,5 @@
 #include "rrtable.h"
+#include "utils.h"
 #include <string.h>
 
 /**
@@ -120,11 +121,11 @@ Result rrt_get_list(DB *db, RecID id, rrt_list_user user, void *closure)
    return 0;
 }
 
-RRTable_Class RRT = {
-   rrt_open,
-   rrt_add_link,
-   rrt_get_list
-};
+/* RRTable_Class RRT = { */
+/*    rrt_open, */
+/*    rrt_add_link, */
+/*    rrt_get_list */
+/* }; */
 
 
 
@@ -185,5 +186,5 @@ int main(int argc, const char **argv)
 /*  cc -Wall -Werror -ggdb      \*/
 /*  -std=c99 -pedantic          \*/
 /*  -D${b^^}_MAIN -o $b ${b}.c  \*/
-/*  -ldb"                       \*/
+/*  -ldb -lreadargs"            \*/
 /* End: */
