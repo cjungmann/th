@@ -9,16 +9,24 @@
 #include "parse_thesaurus.h"
 #include "utils.h"
 #include "term.h"
+#include "read_file_lines.h"
+#include "wordc.h"
 
 // thesaurus_name moved to thesaurus.c
 const char *thesaurus_word=NULL;
 int thesaurus_recid=0;
 
+const char *freq_word = NULL;
+
 bool flag_import_thesaurus = 0;
 bool flag_dump_thesaurus = 0;
+bool flag_import_frequencies = 0;
 bool flag_stack_report = 0;
 bool flag_enumerate = 0;
 bool flag_verbose = 0;
+
+const char *path_thesaurus_source = "files/mthesaur.txt";
+const char *path_frequency_source = "files/count_1w.txt";
 
 /**
  * Fulfills command line option -i.
@@ -30,7 +38,7 @@ bool flag_verbose = 0;
 int import_thesaurus(void)
 {
    int retval = 1;
-   FILE *f = fopen("files/mthesaur.txt", "r");
+   FILE *f = fopen(path_thesaurus_source, "r");
    if (f)
    {
       Result result;
@@ -78,6 +86,54 @@ bool dump_thesaurus(void)
    }
 
    return 1;
+}
+
+/**
+ * intermediary callback function for verbose mode while
+ * importing word frequency.
+ */
+bool verbose_wcc_add_word(const char *line, const char *end, void *closure)
+{
+   const char *end_word;
+   Freq vcount;
+
+   wcc_interpret_string_number(line, end, &end_word, &vcount);
+
+   printf("\x1b[1G\x1b[K%.*s", (int)(end_word-line), line);
+
+   return wcc_add_word(line, end, closure);
+}
+
+/**
+ * Reads word-count data from file, building a table
+ * with word frequency and rank.
+ *
+ * Uses wordc.c and read_file_lines.c, accessed through
+ * wordc.h and read_file_lines.h.
+ */
+int import_frequencies(void)
+{
+   Result result;
+   WCC wcc;
+   memset(&wcc, 0, sizeof(WCC));
+   if (!(result = wcc_open(&wcc, "wordc.db", 1)))
+   {
+      line_user_f user = flag_verbose ? verbose_wcc_add_word : wcc_add_word;
+      result = read_file_lines(path_frequency_source, user, &wcc);
+      wcc_close(&wcc);
+
+      // Print newline if verbose mode repeatedly used same line for progress.
+      if (flag_verbose)
+         printf("\n");
+   }
+
+   if (result)
+   {
+      fprintf(stderr, "Thesaurus import failed: %s.\n", db_strerror(result));
+      return 1;
+   }
+   else
+      return 0;
 }
 
 
@@ -398,12 +454,12 @@ int thesaurus_word_by_recid(int recid)
 }
 
 typedef struct enumerator_track {
-   int entries;
-   int words;
+   int   entries;
+   int   words;
    RecID min_syns_id;
-   int min_syns;
+   int   min_syns;
    RecID max_syns_id;
-   int max_syns;
+   int   max_syns;
 } ET;
 
 void enumerator_callback(TTABS *ttabs, RecID id, TREC *trec, void *closure)
@@ -478,7 +534,14 @@ raAction actions[] = {
 
    {'T', "import_thesaurus", "Import thesaurus contents", &ra_flag_agent, &flag_import_thesaurus },
 
-   {'f', "thesaurus_name",   "Change base name of thesaurus database (import and usage)", &ra_string_agent, &thesaurus_name },
+   { 0, "thesaurus_name",   "Change base name of thesaurus database (import and usage)", &ra_string_agent, &thesaurus_name },
+   { 0, "thesaurus_source", "Path to thesaurus source", &ra_string_agent, &path_thesaurus_source },
+   { 0, "frequency_source", "Path to frequency source", &ra_string_agent, &path_frequency_source },
+
+
+   {'f', "freq_word",        "Display frequency information about word", &ra_string_agent, &freq_word },
+   {'F', "freq_import",      "Import frequency data", &ra_flag_agent, &flag_import_frequencies }, 
+
    {'v', "verbose",          "Verbose output for import", &ra_flag_agent, &flag_verbose },
 
    {'e', "enumerate",        "DEBUGGING: Count synonyms per entry", &ra_flag_agent, &flag_enumerate },
@@ -497,6 +560,8 @@ int main(int argc, const char **argv)
          return import_thesaurus();
       else if (flag_dump_thesaurus)
          return dump_thesaurus();
+      else if (flag_import_frequencies)
+         return import_frequencies();
       else if (flag_enumerate)
          return enumerate_words();
       else if (thesaurus_word)
