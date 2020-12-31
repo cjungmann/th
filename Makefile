@@ -16,7 +16,7 @@ LIB_MODULES != ls -1 ${SRC}*.c | sed 's/\.c/\.o/g'
 LIBS = -ldb -lreadargs
 
 .PHONY: all
-all: ${TARGET} thesaurus.db files/count_1w.txt
+all: ${TARGET} thesaurus.db dict.db files/count_1w.txt
 
 ${TARGET}: ${LIB_MODULES}
 	${CC} ${CFLAGS} -o $@ ${LIB_MODULES} ${LIBS}
@@ -24,19 +24,44 @@ ${TARGET}: ${LIB_MODULES}
 %.o: %.c
 	${CC} ${CFLAGS} -c -o $@ $<
 
+# Download and import thesaurus entries
 thesaurus.db : files/mthesaur.txt
 	@echo "Importing Moby Thesaurus into *th*"
 	./th -Tv
 
 files/mthesaur.txt:
-	@echo "Downloading Moby Thesaurus source data from Gutenberg.org"
 	install -d files
+	@echo "Downloading Moby Thesaurus source data from Gutenberg.org"
 	wget -nc -P files ftp://ftp.ibiblio.org/pub/docs/books/gutenberg/3/2/0/3202/files.zip
 	unzip -n files/files.zip
 
+# Download and import word frequency entries
 files/count_1w.txt:
+	install -d files
 	@echo "Downloading word count document from norvig.com"
 	wget -nc -P files https://norvig.com/ngrams/count_1w.txt
+
+# Download and import dictionary entries
+.PHONY: cleand
+cleand:
+	rm -rf dict.db
+	# rm -rf files/gcide
+	rm -rf files/dict_raw.xml
+	rm -rf files/dict.xml
+
+dict.db: files/dict.xml
+	touch dict.db
+
+files/dict.xml : files/gcide/CIDE.A
+	scripts/gcide_preprocess_to_dict_xml files/gcide files/dict.xml
+
+files/gcide/CIDE.A:
+	install -d files
+	@echo "Downloading GCide dictionary from gnu.org"
+	wget -nc "ftp://ftp.gnu.org/gnu/gcide/gcide-0.52.tar.xz"
+	unxz gcide-0.52.tar.xz
+	tar -xf gcide-0.52.tar
+	mv gcide-0.52 files/gcide
 
 install:
 	install -D --mode=755 ${TARGET}        ${TH_HOME}
