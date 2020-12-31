@@ -19,6 +19,8 @@ typedef struct wordc_class {
    Rank static_rank;
 } WCC;
 
+void wcc_interpret_string_number(const char /*in*/ *start, const char /*in*/ *end,
+                                 const char /*out*/ **word_end, Freq /*out*/ *number);
 
 Result wcc_open(WCC *wcc, const char *name, int create);
 bool wcc_add_word(const char *line, const char *end, void *closure);

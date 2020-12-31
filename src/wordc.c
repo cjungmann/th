@@ -21,7 +21,7 @@
  * address of the end-of-string and sets *value* to the occurance
  * count of that perticular word.
  */
-void interpret_string_number(const char /*in*/ *start, const char /*in*/ *end,
+void wcc_interpret_string_number(const char /*in*/ *start, const char /*in*/ *end,
                              const char /*out*/ **word_end, Freq /*out*/ *number)
 {
    const char *ptr = end;
@@ -80,7 +80,7 @@ bool wcc_add_word(const char *line, const char *end, void *closure)
    
    const char *end_word;
    Freq   vcount;
-   interpret_string_number(line, end, &end_word, &vcount);
+   wcc_interpret_string_number(line, end, &end_word, &vcount);
 
    Rank rank = wcc->static_rank;
    ++wcc->static_position;
@@ -191,7 +191,7 @@ bool rfl_commaize_user(const char *start, const char *end, void *closure)
 {
    const char *end_word;
    Freq value;
-   interpret_string_number(start, end, &end_word, &value);
+   wcc_interpret_string_number(start, end, &end_word, &value);
 
    print_word(start, end_word, min_word_len);
    fputc(' ', stdout);
@@ -211,7 +211,7 @@ bool rfl_comparable_user(const char *start, const char *end, void *closure)
 {
    const char *end_word;
    uint64_t   value;
-   interpret_string_number(start, end, &end_word, &value);
+   wcc_interpret_string_number(start, end, &end_word, &value);
 
    printf("%.*s\t%lu\n", (int)(end_word - start), start, value);
 
