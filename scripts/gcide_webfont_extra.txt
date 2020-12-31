@@ -1,0 +1,77 @@
+Α   ALPHA      A
+Β   BETA       B
+Γ   GAMMA      G
+Δ   DELTA      D
+Ε   EPSILON    E
+Ζ   ZETA       Z
+Η   ETA        H
+Θ   THETA      Q
+Ι   IOTA       I
+Κ   KAPPA      K
+Λ   LAMBDA     L
+Μ   MU         M
+Ν   NU         N
+Ξ   XI         X
+Ο   OMICRON    O
+Π   PI         P
+Ρ   RHO        R
+Σ   SIGMA      S
+Τ   TAU        T
+Υ   UPSILON    Y,U
+Φ   PHI        F
+Χ   CHI        CH
+Ψ   PSI        PS
+Ω   OMEGA      W
+ς   sigmat     s   # end-of-word sigma
+
+# <and/ and <or/ intended to be italicized.
+extra  <i>and</i>  and
+extra  <i>or</i>   or
+
+# Typographical symbols
+extra  ˘           breve
+extra  2           2dot
+extra  3           3dot
+extra  8           8star
+extra  â           acirc
+extra  +           add
+extra  ×           times
+extra  †           dagger
+extra  †           Dagger
+extra  ‡           ddag
+extra  ¶           para
+extra  →           rarr
+extra  '           asper
+extra  ⁂           asterism
+extra  Č           Crev
+extra  ᵺ           th
+extra  ﬄ           ffllig
+extra  ﬁ           filig
+extra  ﬂ           fllig
+extra  >           gt
+extra  <           lt
+extra  ɫ           ltil
+extra  '           min
+extra  ⁚           dele
+extra  Ð           EDH
+extra  ¨           umlaut
+extra  ♮           natural
+extra  ℥           ounceap
+extra  𝄐           pause
+extra  ∇           nabla
+# Astrological
+extra  ♃           Jupiter
+extra  ♌          Leo
+extra  ♎          Libra
+extra  ☿           Mercury
+extra  ♓          Pisces
+extra  ♐          Sagittarius
+extra  ♏          Scorpio
+extra  ☉           Sun
+extra  ♉          Taurus
+extra  ♍          Virgo
+
+
+extra  ŏŏ          oocr
+extra  ōō          oomac
+extra  ♂           Male

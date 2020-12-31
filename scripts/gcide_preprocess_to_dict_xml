@@ -1,0 +1,325 @@
+#!/usr/bin/env bash
+
+declare webfont_full=webfont_full.txt
+
+# sed scripts to apply to gcide sources BEFORE being
+# saved to $target_raw.  This affords an opportunity
+# to avoid double substitutions, especially for &|&amp;
+declare -a pre_raw_seds=(
+    's|CI<Crev/|ↀ|g'
+    's|&|&amp\;|g'
+
+    # Remove rare and unnecessary unmatched tags
+    's|</\?mhw>||g'
+    's|</\?def2>||g'
+    's|</\?vmorph>||g'
+    's|</\?wordforms>||g'
+    's|<method>||g'
+    
+    # Remove badly-formed comment blocks
+    's|<-\+|\&lt\;-|g'
+    's|-\+>|-\&gt\;|g'
+
+    's|<lt/|\&lt\;|g'
+    's|<gt/|\&gt\;|g'
+
+    # Replace some unique entities
+    "s|\\\'d8|^|g"
+    's|<?/|¿|g'
+
+    # Fixing specific, single location errors
+    's#available\.<\/as>#available\.#'
+    's#<i>b</>#<i>b</i>#'
+    's#(> or <)#(&gt\; or &lt\;)#g'
+)
+
+declare -a grep_keepers=(
+    -o
+    -e "<ent>[^<]\+</ent>"
+    -e "<hw>[^<]\+</hw>"
+    -e '<pos>[^<]\+</pos>'
+    -e "<def>.\+</def>"
+    -e "<sn>[^<]\+</sn>"
+    -e "<source>[^<]\+</source>"
+    # -e "</\?p>"
+)
+
+confirm_file()
+{
+    local fcaller="${2:-unspecified}"
+    if ! [ -e "$1" ]; then
+        echo "In function ${fcaller}, Failed to find necessary file \"$1\"." >&2
+        return 1
+    fi
+    return 0
+}
+
+# Entity-fixing section
+#
+# This process takes multiple steps, broken down into several functions.
+get_gcide_entities_from_source()
+{
+    if [ $# -lt 1 ]; then
+        echo "get_gcide_entities_from_source(): failed to provide a source." >&2
+        return 1
+    fi
+
+    local source="$1"
+    
+    echo "PWD is ${PWD} (why can't I find $source?)." >&2
+
+    if ! confirm_file "${source}" "get_gcide_entities_from_source"; then
+        return 1
+    fi
+
+    # Get entity and following character that confirms the end of the entity
+    local -a pass_one=(
+        -o
+        '<[[:alnum:]]\+[^>]'
+        )
+
+    local -a pass_two=(
+        -o
+        '^[^/]\+/'
+        )
+
+    grep "${pass_one[@]}" "${source}" | grep "${pass_two[@]}" | sort -u
+}
+
+convert_entity_to_symbol()
+{
+    local IFS=' \n\t'
+    local ent="$1"
+    local pattern="^[[:digit:]]\+ \+[[:digit:]]\+ \+[[:xdigit:]]\+ \+${ent}"
+    local gline=$( grep "${pattern}" "${webfont_full}" )
+    if [ $? -eq 0 ]; then
+        oline=(  ${gline} )
+        if [ "${#oline[@]}" -gt 4 ]; then
+            ucode="${gline:46:1}"
+            echo "s|${ent}|${ucode}|g"
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+convert_entity_to_greek()
+{
+    local -i len=$(( "${#1}" - 2 ))
+    local letter="${1:1:$len}"
+    local pattern="^.\{4\}${letter}[[:space:]]\+[[:alpha:]].*$"
+
+    local gline
+    if gline=$( grep "$pattern" "${webfont_full}" ); then
+        echo "s|$1|${gline:0:1}|g"
+        return 0
+    fi
+    return 1
+}
+
+convert_entity_with_extra()
+{
+    local -i len=$(( "${#1}" - 2 ))
+    local entity="${1:1:$len}"
+    local pattern="extra[[:space:]]\+[^\s]\+[[:space:]]\+${entity}"
+    local bash_pattern="extra\\s+([^ ]+).*"
+    local matched
+    
+    local gline
+    if gline=$( grep "$pattern" "${webfont_full}" ); then
+        if [[ "$gline" =~ $bash_pattern ]]; then
+            matched="${BASH_REMATCH[1]}"
+            echo "s|$1|${matched}|g"
+            return 0
+        fi
+    fi
+    return 1
+}
+
+convert_italic_entity()
+{
+    local -i len=$(( "${#1}" - 2 ))
+    local entity="${1:1:$len}"
+    if [[ "$entity" =~ [[:alpha:]]it ]]; then
+        echo "s|$1|<i>${1:1:1}</i>|g"
+        return 0;
+    fi
+    return 1;
+}
+
+###########################
+# Fraction-building section
+#
+declare supers="⁰¹²³⁴⁵⁶⁷⁸⁹"
+declare subs="₀₁₂₃₄₅₆₇₈₉"
+declare -i zero_val=$( printf "%d" "'0" )
+
+number_to_int()
+{
+    local -i digval=$(  printf "%d" "'$1" )
+    echo "$(( digval - zero_val ))"
+}
+
+number_to_int_array()
+{
+    local -i nlen="${#1}"
+    local domain="$2"
+    local -i i ndx
+    for ((i=0; i<nlen; ++i)); do
+        ndx=$( number_to_int "${1:$i:1}" )
+        echo -n "${domain:$ndx:1}"
+    done
+}
+
+num_to_supers() { number_to_int_array "$1" "$supers"; }
+num_to_subs()   { number_to_int_array "$1" "$subs"; }
+
+##############################
+# Using fraction-building code
+#
+convert_fraction()
+{
+    local -a parts
+    local IFS OIFS="$IFS"
+    if [ "${entity:0:4}" = "frac" ]; then
+        local frac="${entity:4}"
+
+        IFS="x"
+        parts=( $frac )
+
+        IFS="$OIFS"
+        if [ "${#parts[@]}" -eq 2 ]; then
+            num_to_supers "${parts[0]}"
+            echo -n "/"
+            num_to_subs "${parts[1]}"
+            echo
+        else
+            echo -n "/"
+            num_to_subs "${parts[0]}"
+        fi
+        return 0
+    fi
+
+    return 1
+}
+
+convert_frac_entity()
+{
+    local -i len=$(( "${#1}" - 2 ))
+    local entity="${1:1:$len}"
+    if [ "${entity:0:4}" = "frac" ]; then
+        subst=$( convert_fraction "${entity:4}" )
+        if [ $? -eq 0 ]; then
+            echo "s|$1|${subst}|g"
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+
+build_cide_seds()
+{
+    local invalid_xml_file="$1"
+    local webfont="${SOURCE}/webfont.txt"
+    local extra="scripts/gcide_webfont_extra.txt"
+
+    if ! confirm_file "${webfont}" "build_cide_seds"; then
+        return 1;
+    fi
+
+    if ! confirm_file "${extra}" "build_cide_seds"; then
+        return 1;
+    fi
+
+    local -a ents
+
+    if ! ents=( $( get_gcide_entities_from_source "${invalid_xml_file}" ) ); then
+        return 1
+    fi
+
+    local ent
+    local sedsub
+
+    local webfont_temp="webfont_txt"
+    cat "${webfont}" "${extra}" > "${webfont_full}"
+
+    for ent in "${ents[@]}"; do
+        # Try to find substitution
+        sedsub=$( convert_entity_with_extra "$ent" )
+        if [ $? -ne 0 ]; then sedsub=$( convert_entity_to_symbol "$ent" ); fi
+        if [ $? -ne 0 ]; then sedsub=$( convert_entity_to_greek "$ent" ); fi
+        if [ $? -ne 0 ]; then sedsub=$( convert_italic_entity "$ent" ); fi
+        if [ $? -ne 0 ]; then sedsub=$( convert_frac_entity "$ent" ); fi
+
+        # Write substitution if it was found:
+        if [ "$sedsub" ]; then
+            echo "${sedsub}"
+        else
+            echo "s|$ent|¿|g"  #    # unknown symbol"
+        fi
+        
+    done
+}
+
+echo_dash_e() { printf "-"; printf "%s\n" "e"; }
+
+declare -a raw_seds
+declare -a final_seds
+
+process_GCIDE_file()
+{
+    local fname="$1"
+    echo -n "processing [2K[1G${fname} right now" >&2
+
+    echo
+    local IFS=';'
+    grep "${grep_keepers[@]}" "${fname}" | sed -e "${pre_raw_seds[*]}" "${raw_seds[@]}"
+}
+
+main()
+{
+    local SOURCE="${1:-files/gcide}"
+    local target="${2:-files/dict.xml}"
+
+    local raw_target="files/dict_raw.xml"
+
+    local -a files=( $( ls -1 "${SOURCE}"/CIDE.* ) )
+    if [ "${#files[@]}" -gt 0 ]; then
+
+        # This local variable will be available to called functions
+        local -a raw_seds
+        local IFS=$'\n'
+        if [ $? -eq 0 ]; then
+            echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"          > "${raw_target}"
+            echo "<dictionary xmlns=\"http://www.w3.org/1999/xhtml\">" >> "${raw_target}"
+            local file
+            for file in "${files[@]}"; do
+                process_GCIDE_file "$file"                             >> "${raw_target}"
+            done
+            echo "</dictionary>"                                       >> "${raw_target}"
+
+            # new line after reusing same line for CIDE processing
+            echo >&2
+
+
+
+            raw_seds=( $( build_cide_seds "${raw_target}" ) )
+            if [ $? -eq 0 ]; then
+                IFS=$';'
+                sed -e "${raw_seds[*]}" "${raw_target}" > "${target}"
+                return $?
+            fi
+        fi
+    fi
+
+    return 1
+}
+
+
+
+
+
+main "$1" "$2"
