@@ -15,7 +15,7 @@
 #include <fcntl.h>     // for open()
 #include <errno.h>     // ENOENT return value
 
-const char *thesaurus_name = NULL;
+const char *thesaurus_name = "thesaurus";
 
 // "class" member functions, for TTABS_Class instance TTB
 void   ttabs_init_imp(TTABS *ttabs);
@@ -131,14 +131,14 @@ Result ttabs_add_word_imp(TTABS *ttabs, const char *str, int size, bool newline)
          if ((result = ivt->add_record_raw(ivt, &recid, &key, &value)))
          {
             db = ivt->get_records_db(ivt);
-            db->err(db, result, "Unexpected error adding a record for \"%*.s\".", size, str);
+            db->err(db, result, "Unexpected error adding a record for \"%.*s\".", size, str);
             return 0;
          }
       }
       else
       {
          db = ivt->get_records_db(ivt);
-         db->err(db, result, "Unexpected error searching for \"%*.s\".", size, str);
+         db->err(db, result, "Unexpected error searching for \"%.*s\".", size, str);
          return 0;
       }
    }
@@ -155,7 +155,7 @@ Result ttabs_add_word_imp(TTABS *ttabs, const char *str, int size, bool newline)
       if ((result = ivt->update_record(ivt, recid, &value)))
       {
          db = ivt->get_records_db(ivt);
-         db->err(db, result, "Unexpected error updating the record for \"%*.s\".", size, str);
+         db->err(db, result, "Unexpected error updating the record for \"%.*s\".", size, str);
          return 0;
       }
    }
@@ -307,6 +307,10 @@ Result ttabs_get_words_imp(DB *db, TTABS *ttabs, RecID id, recid_list_user user,
    return result;
 }
 
+/**
+ * For each word record in the table, this function will call
+ * the *user* function with the record and the *closure*.
+ */
 Result ttabs_walk_entries_imp(TTABS *ttabs, tword_user user, void *closure)
 {
    DB *db = ttabs->ivt.get_records_db(&ttabs->ivt);
@@ -322,7 +326,7 @@ Result ttabs_walk_entries_imp(TTABS *ttabs, tword_user user, void *closure)
    memset(&value, 0, sizeof(DBT));
 
    while (!(result = cursor->get(cursor, &key, &value, DB_NEXT)))
-      (*user)(ttabs, *(RecID*)key.data, (TREC*)value.data, closure);
+      (*user)(ttabs, *(RecID*)key.data, (TREC*)value.data, value.size - sizeof(TREC), closure);
 
    if (result != DB_NOTFOUND)
       db->err(db, result, "Fell out of entries walk.");
