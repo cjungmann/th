@@ -55,6 +55,12 @@ using is based on Google ngrams:
 
 [Natural Language Corpus Data: Beautiful Data](https://norvig.com/ngrams/)
 
+I haven't really studied the Norvig source, so it's possible
+that it has a lot of nonsense.  There is another source that
+may have a more sanitized list, [hackerb9/gwordlist](https://github.com/hackerb9/gwordlist).
+If Norvig is a problem, I want to remember this alternate list
+with which I may replace it.
+
 ## Dictionary
 
 Grouping synonyms by part of speech (ie noun, verb, adjective, etc.)
