@@ -25,12 +25,11 @@ ${TARGET}: ${LIB_MODULES}
 	${CC} ${CFLAGS} -o $@ ${LIB_MODULES} ${LIBS}
 
 %.o: %.c
-	@echo EXTRA SOURCE = ${EXTRA_SOURCE}
 	${CC} ${CFLAGS} -c -o $@ $<
-
 
 # Link from c_patterns
 ${SRC}get_keypress.c:
+	@echo "Getting lastest c_patterns modules."
 	git clone http://www.github.com/cjungmann/c_patterns.git
 	cp -s ${PWD}/c_patterns/get_keypress.* src
 	cp -s ${PWD}/c_patterns/columnize.* src
@@ -96,4 +95,8 @@ clean:
 	rm -f src/test.db
 	rm -f src/thesaurus
 	rm -f src/utils
+
+	rm -f src/get_keypress.*
+	rm -f src/columnize.*
+	rm -rf c_patterns
 
