@@ -3,6 +3,7 @@
 #include <ctype.h>   // for isspace
 #include <stdlib.h>  // for atol()
 #include <string.h>  // for memcpy()
+#include <alloca.h>
 
 #include <sys/types.h> // for open(), read()
 #include <sys/stat.h>
@@ -142,6 +143,31 @@ void wcc_close(WCC *wcc)
 {
    if (wcc)
       wcc->db->close(wcc->db, 0);
+}
+
+DataSize wcc_ranker(void *wcc, const char *word, int size)
+{
+   Rank rank;
+   Freq count;
+
+   Result result;
+
+   // Make NULL-terminated copy if *word* is not NULL terminated:
+   if (word[size] != '\0')
+   {
+      char *t = (char*)alloca(size+1);
+      memcpy(t, word, size);
+      t[size] = '\0';
+      word = t;
+   }
+
+   if ((result = wcc_get_word((WCC*)wcc, word, &rank, &count)))
+   {
+      fprintf(stderr, "wcc_ranker failed with %s.\n", db_strerror(result));
+      return 0;
+   }
+   else
+      return rank;
 }
 
 #ifdef WORDC_MAIN

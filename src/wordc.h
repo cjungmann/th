@@ -27,6 +27,8 @@ bool wcc_add_word(const char *line, const char *end, void *closure);
 Result wcc_get_word(WCC *wcc, const char *word, Rank *rank, Freq *count);
 void wcc_close(WCC *wcc);
 
+DataSize wcc_ranker(void *wcc, const char *word, int size);
+
 
 /* typedef bool (*line_user)(const char *line, const char *end, void *closure); */
 /* void read_file_lines(int fh, line_user user, void *closure); */

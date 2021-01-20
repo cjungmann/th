@@ -2,6 +2,7 @@
 #include <readargs.h>
 #include <alloca.h>
 #include <limits.h>
+#include <assert.h>
 
 #include "bdb.h"
 #include "ivtable.h"
@@ -12,6 +13,9 @@
 #include "read_file_lines.h"
 #include "wordc.h"
 
+#include "get_keypress.h"
+#include "columnize.h"
+
 // thesaurus_name moved to thesaurus.c
 const char *thesaurus_word=NULL;
 int thesaurus_recid=0;
@@ -21,6 +25,7 @@ const char *freq_word = NULL;
 bool flag_import_thesaurus = 0;
 bool flag_dump_thesaurus = 0;
 bool flag_import_frequencies = 0;
+bool flag_update_freq = 0;
 bool flag_stack_report = 0;
 bool flag_enumerate = 0;
 bool flag_verbose = 0;
@@ -49,8 +54,19 @@ int import_thesaurus(void)
       TTB.init(&ttabs);
       if (!(result = TTB.open(&ttabs, tname, 1)))
       {
+         WCC wcc;
+         memset(&wcc, 0, sizeof(WCC));
+         if (!(result = wcc_open(&wcc, "wordc.db", 0)))
+         {
+            ttabs.rankobj = &wcc;
+            ttabs.ranker = wcc_ranker;
+         }
+
          read_thesaurus_file(f, flag_verbose, save_thesaurus_word, &ttabs);
          retval = 0;
+
+         if (ttabs.rankobj)
+            wcc_close(&wcc);
          
          TTB.close(&ttabs);
       }
@@ -136,6 +152,59 @@ int import_frequencies(void)
       return 0;
 }
 
+
+void UTWF_user(TTABS *ttabs, RecID id, TREC *trec, int word_len, void *closure)
+{
+   /* WCC *wcc = (WCC*)closure; */
+
+   // %* or %*. denote the length, in this case adding padding spaces.
+   printf("%*s", (45-word_len), "");
+   // %.* denotes the precision, which we need to print the word.
+   // Using *. will yield a zero-length string.
+   printf("%.*s: %u\n",
+          word_len, trec->value,
+          trec->count);
+}
+
+
+int update_thesaurus_word_frequencies(void)
+{
+   Result result;
+
+   printf("Doin' a frequency update.\n");
+
+   TTABS ttabs;
+   memset(&ttabs, 0, sizeof(TTABS));
+   TTB.init(&ttabs);
+   if ((result = TTB.open(&ttabs, thesaurus_name, 0)))
+   {
+      fprintf(stderr, "Failed to open thesaurus database %s: %s.\n",
+              thesaurus_name,
+              db_strerror(result));
+      goto abandon_function;
+   }
+
+   WCC wcc;
+   memset(&wcc, 0, sizeof(WCC));
+
+   if ((result = wcc_open(&wcc, "wordc.db", 0)))
+   {
+      fprintf(stderr, "Failed to open word frequency databse %s: %s.\n",
+              thesaurus_name,
+              db_strerror(result));
+      goto abandon_ttabs;
+   }
+
+   TTB.walk_entries(&ttabs, UTWF_user, &wcc);
+
+   wcc_close(&wcc);
+
+  abandon_ttabs:
+   TTB.close(&ttabs);
+
+  abandon_function:
+      return result;
+}
 
 /**
  * Internal function pointer typedef
@@ -355,29 +424,43 @@ struct stwc_closure {
    TTABS      *ttabs;
    const char *word;
    RecID      id;
+   COLDIMS    dims;
 };
+
+
+void show_word_columns(const char **list, int length, void *closure)
+{
+   assert(closure);
+
+   struct stwc_closure *stwc = (struct stwc_closure*)closure;
+   COLDIMS *coldims = &stwc->dims;
+
+   columnize_pager(list, length, coldims);
+   
+}
 
 void show_thesaurus_word_callback(TTABS *ttabs, RecID *list, int length, void *data)
 {
    struct stwc_closure *closure = (struct stwc_closure*)data;
-   
+
    printf("Displaying a list of %d synonyms for %s.\n", length, closure->word);
 
    /* show_recid_recid_list(list, length); */
    /* show_recid_word_list(ttabs, list, length); */
 
-   /* word_list_user = show_word_list; // local, for debugging */
-   word_list_user wlu = show_words;     // production, from term.c
+   /* word_list_user = show_word_list;        // local, for debugging */
+   /* word_list_user wlu = show_words;        // production, from term.c */
+   word_list_user wlu = show_word_columns; // production, from columnify.c
 
    if (flag_stack_report)
       printf("Stack report for alloca method.\n");
 
-   build_word_list_alloca(ttabs, list, length, wlu, NULL);
+   build_word_list_alloca(ttabs, list, length, wlu, closure);
 
    if (flag_stack_report)
    {
       printf("Stack report for recursive/vla method.\n");
-      build_word_list_recurse(ttabs, list, length, wlu, NULL);
+      build_word_list_recurse(ttabs, list, length, wlu, closure);
    }
 }
 
@@ -400,6 +483,8 @@ int show_thesaurus_word(const char *word)
       if (id)
       {
          struct stwc_closure closure = { &ttabs, word, id };
+         columnize_default_dims(&closure.dims);
+         
          TTB.get_words(ttabs.db_r2w, &ttabs, id, show_thesaurus_word_callback, &closure);
       }
       else
@@ -462,7 +547,7 @@ typedef struct enumerator_track {
    int   max_syns;
 } ET;
 
-void enumerator_callback(TTABS *ttabs, RecID id, TREC *trec, void *closure)
+void enumerator_callback(TTABS *ttabs, RecID id, TREC *trec, int word_len, void *closure)
 {
    ET *et = (ET*)closure;
 
@@ -527,27 +612,43 @@ int enumerate_words(void)
 }
 
 raAction actions[] = {
-   {'h', "help",             "This help display", &ra_show_help_agent },
+   {'h', "help",
+    "This help display", &ra_show_help_agent },
 
-   {-1, "*word",             "Show thesaurus entry", &ra_string_agent, &thesaurus_word },
-   {'t', "thesaurus_word",   "Word to be sought in thesaurus", &ra_string_agent, &thesaurus_word },
+   {-1, "*word",
+    "Show thesaurus entry", &ra_string_agent, &thesaurus_word },
+   {'t', "thesaurus_word",
+    "Word to be sought in thesaurus", &ra_string_agent, &thesaurus_word },
 
-   {'T', "import_thesaurus", "Import thesaurus contents", &ra_flag_agent, &flag_import_thesaurus },
+   {'T', "import_thesaurus",
+    "Import thesaurus contents", &ra_flag_agent, &flag_import_thesaurus },
 
-   { 0, "thesaurus_name",   "Change base name of thesaurus database (import and usage)", &ra_string_agent, &thesaurus_name },
-   { 0, "thesaurus_source", "Path to thesaurus source", &ra_string_agent, &path_thesaurus_source },
-   { 0, "frequency_source", "Path to frequency source", &ra_string_agent, &path_frequency_source },
+   { 0, "thesaurus_name",
+     "Change base name of thesaurus database (import and usage)", &ra_string_agent, &thesaurus_name },
+   { 0, "thesaurus_source",
+     "Path to thesaurus source", &ra_string_agent, &path_thesaurus_source },
+   { 0, "frequency_source",
+     "Path to frequency source", &ra_string_agent, &path_frequency_source },
 
 
-   {'f', "freq_word",        "Display frequency information about word", &ra_string_agent, &freq_word },
-   {'F', "freq_import",      "Import frequency data", &ra_flag_agent, &flag_import_frequencies }, 
+   {'f', "freq_word",
+    "Display frequency information about word", &ra_string_agent, &freq_word },
+   {'F', "freq_import",
+    "Import frequency data", &ra_flag_agent, &flag_import_frequencies }, 
+   { 0,  "update_freq",
+     "Update thesaurus word frequencies from wordc.db", &ra_flag_agent, &flag_update_freq },
 
-   {'v', "verbose",          "Verbose output for import", &ra_flag_agent, &flag_verbose },
+   {'v', "verbose",
+    "Verbose output for import", &ra_flag_agent, &flag_verbose },
 
-   {'e', "enumerate",        "DEBUGGING: Count synonyms per entry", &ra_flag_agent, &flag_enumerate },
-   {'d', "thesaurus_dump",   "DEBUGGING; Dump contents of thesaurus database", &ra_flag_agent, &flag_dump_thesaurus },
-   {'i', "id",               "DEBUGGING: Search thesaurus word by id", &ra_int_agent, &thesaurus_recid },
-   {'s', "stack_report",     "DEBUGGING: Show stack report for word lists", &ra_flag_agent, &flag_stack_report }
+   {'e', "enumerate",
+    "DEBUGGING: Count synonyms per entry", &ra_flag_agent, &flag_enumerate },
+   {'d', "thesaurus_dump",
+    "DEBUGGING; Dump contents of thesaurus database", &ra_flag_agent, &flag_dump_thesaurus },
+   {'i', "id",
+    "DEBUGGING: Search thesaurus word by id", &ra_int_agent, &thesaurus_recid },
+   {'s', "stack_report",
+    "DEBUGGING: Show stack report for word lists", &ra_flag_agent, &flag_stack_report }
 };
 
 int main(int argc, const char **argv)
@@ -562,6 +663,8 @@ int main(int argc, const char **argv)
          return dump_thesaurus();
       else if (flag_import_frequencies)
          return import_frequencies();
+      else if (flag_update_freq)
+         return update_thesaurus_word_frequencies();
       else if (flag_enumerate)
          return enumerate_words();
       else if (thesaurus_word)

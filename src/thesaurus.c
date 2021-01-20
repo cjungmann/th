@@ -27,6 +27,7 @@ RecID  ttabs_lookup_imp(TTABS *ttabs, const char *str);
 Result ttabs_get_words_imp(DB *db, TTABS *ttabs, RecID id, recid_list_user user, void *closure);
 Result ttabs_walk_entries_imp(TTABS *ttabs, tword_user user, void *closure);
 int ttabs_count_synonyms_imp(TTABS *ttabs, RecID id);
+DataSize ttabs_word_rank_imp(TTABS *ttabs, const char *word, int size);
 
 void i2i_opener(const char *path, void *data);
 Result open_linker(DB **db, int create, const char *name, const char *ext);
@@ -42,7 +43,8 @@ TTABS_Class TTB = {
    ttabs_lookup_imp,
    ttabs_get_words_imp,
    ttabs_walk_entries_imp,
-   ttabs_count_synonyms_imp
+   ttabs_count_synonyms_imp,
+   ttabs_word_rank_imp
 };
 
 void ttabs_init_imp(TTABS *ttabs)
@@ -121,6 +123,7 @@ Result ttabs_add_word_imp(TTABS *ttabs, const char *str, int size, bool newline)
 
          // Set the record values
          ++trec->count;
+         trec->frank = TTB.get_rank_from_ranker(ttabs, str, size);
          if (newline)
             ++trec->is_root;
          memcpy(trec->value, str, size);
@@ -367,6 +370,14 @@ int ttabs_count_synonyms_imp(TTABS *ttabs, RecID id)
    
   abandon_function:
    return count;
+}
+
+DataSize ttabs_word_rank_imp(TTABS *ttabs, const char *word, int size)
+{
+   if (ttabs->rankobj && ttabs->ranker)
+      return ttabs->ranker(ttabs->rankobj, word, size);
+   else
+      return 0;
 }
 
 /******
