@@ -11,8 +11,11 @@ ETC_CONTENT="${DB_HOME}/${DB_NAME}"
 CFLAGS = -Wall -Werror -std=c99 -pedantic -m64 -ggdb
 SRC=./src/
 
+EXTRA_SOURCE != if ! [ -e ${SRC}get_keypress.c ]; then echo ${SRC}get_keypress.c ${SRC}columnize.c; fi
+
 LIB_SOURCE != ls -1 ${SRC}*.c
-LIB_MODULES != ls -1 ${SRC}*.c | sed 's/\.c/\.o/g'
+LIB_SOURCE := ${EXTRA_SOURCE} ${LIB_SOURCE}
+LIB_MODULES != echo ${LIB_SOURCE} | sed 's/\.c/\.o/g'
 LIBS = -ldb -lreadargs
 
 .PHONY: all
@@ -22,7 +25,15 @@ ${TARGET}: ${LIB_MODULES}
 	${CC} ${CFLAGS} -o $@ ${LIB_MODULES} ${LIBS}
 
 %.o: %.c
+	@echo EXTRA SOURCE = ${EXTRA_SOURCE}
 	${CC} ${CFLAGS} -c -o $@ $<
+
+
+# Link from c_patterns
+${SRC}get_keypress.c:
+	git clone http://www.github.com/cjungmann/c_patterns.git
+	cp -s ${PWD}/c_patterns/get_keypress.* src
+	cp -s ${PWD}/c_patterns/columnize.* src
 
 # Download and import thesaurus entries
 thesaurus.db : files/mthesaur.txt
