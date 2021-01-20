@@ -1,3 +1,6 @@
+c_patterns
+src/get_keypress.*
+src/columnize.*
 src/*.o
 src/bdb
 src/istringt
@@ -8,5 +11,6 @@ src/utils
 files
 term
 th
+thesaurus*
 words
 wordc
