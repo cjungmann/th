@@ -435,7 +435,7 @@ void show_word_columns(const char **list, int length, void *closure)
    struct stwc_closure *stwc = (struct stwc_closure*)closure;
    COLDIMS *coldims = &stwc->dims;
 
-   columnize_pager(list, length, coldims);
+   columnize_string_pager(list, length, coldims);
    
 }
 
