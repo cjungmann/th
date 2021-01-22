@@ -1,5 +1,7 @@
 #include <string.h>
+#include <strings.h>  // for strcasecmp()
 #include <readargs.h>
+#include <stdlib.h>  // for qsort (alloca in BSD?)
 #include <alloca.h>
 #include <limits.h>
 #include <assert.h>
@@ -214,6 +216,7 @@ int update_thesaurus_word_frequencies(void)
  * *alloca* by using recursion and VLA instead.
  */
 typedef void (*word_list_user)(const char **list, int length, void *closure);
+typedef void (*trec_list_user)(const TREC **list, int length, void *closure);
 
 /**
  * This "closure" contains all the variables needed by
@@ -350,6 +353,39 @@ void build_word_list_alloca(TTABS *ttabs, RecID *list, int len, word_list_user u
    (*user)(wlist, len, closure);
 }
 
+void build_trec_list_alloca(TTABS *ttabs, RecID *list, int len, trec_list_user user, void *closure)
+{
+   IVTable *ivt = &ttabs->ivt;
+
+   RecID *listend = list + len;
+
+   const TREC *tlist[len];
+   memset(tlist, 0, sizeof(tlist));
+   const TREC **tptr = tlist;
+
+   Result result;
+   DBT value;
+   memset(&value, 0, sizeof(DBT));
+
+   while (list < listend)
+   {
+      if ((result = ivt->get_record_by_recid(ivt, *list, &value)))
+         fprintf(stderr, "Failed to retrieve word number %u.\n", *list);
+      else if (value.size > 0)
+      {
+         TREC *trec = (TREC*)alloca(value.size);
+         memcpy(trec, value.data, value.size);
+
+         *tptr = trec;
+         ++tptr;
+      }
+
+      ++list;
+   }
+
+   (*user)(tlist, len, closure);
+}
+
 /**
  * One callback function option for showing the results of one
  * of the related word collection functions.
@@ -436,8 +472,90 @@ void show_word_columns(const char **list, int length, void *closure)
    COLDIMS *coldims = &stwc->dims;
 
    columnize_string_pager(list, length, coldims);
-   
 }
+
+/*
+ * Section of TREC columns stuff, including a CEIF implementation,
+ * consisting of a few functions, to be used by columnize.
+ */
+
+int trec_get_len(const void *el)
+{
+   const TREC *rec = (const TREC *)el;
+   return rec->rec_length - sizeof(TREC);
+}
+
+int trec_print(FILE *f, const void *el)
+{
+   const TREC *rec = (const TREC *)el;
+   int word_len = rec->rec_length - sizeof(TREC);
+   return fprintf(f, "%*s", word_len, rec->value);
+}
+
+int trec_print_cell(FILE *f, const void *el, int width)
+{
+   const TREC *rec = (const TREC *)el;
+   int word_len = rec->rec_length - sizeof(TREC);
+
+   return fprintf(f, "%-*.*s", width, word_len, rec->value);
+}
+
+int trec_sort_alpha(const void *left, const void *right)
+{
+   const TREC *rec_left = *(const TREC **)left;
+   int len_left = rec_left->rec_length - sizeof(TREC);
+   char buff_left[len_left+1];
+   memcpy(buff_left, rec_left->value, len_left);
+   buff_left[len_left] = '\0';
+
+   const TREC *rec_right = *(const TREC **)right;
+   int len_right = rec_right->rec_length - sizeof(TREC);
+   char buff_right[len_right+1];
+   memcpy(buff_right, rec_right->value, len_right);
+   buff_right[len_right] = '\0';
+
+   return strcasecmp(buff_left, buff_right);
+}
+
+// Reverse sort because we want the most frequent at the
+// top of the list.
+int trec_sort_t_freq(const void *left, const void *right)
+{
+   const TREC *rec_left = *(const TREC **)left;
+   const TREC *rec_right = *(const TREC **)right;
+
+   // Reverse-sort, so we reverse the subtraction values
+   return rec_right->count - rec_left->count;
+}
+
+int trec_sort_g_freq(const void *left, const void *right)
+{
+   const TREC *rec_left = *(const TREC **)left;
+   const TREC *rec_right = *(const TREC **)right;
+
+   return rec_left->frank - rec_right->frank;
+}
+
+const CEIF ceif_trec = { trec_get_len, trec_print, trec_print_cell };
+
+void show_trec_columns(const TREC **list, int length, void *closure)
+{
+   assert(closure);
+
+   struct stwc_closure *stwc = (struct stwc_closure*)closure;
+   COLDIMS *coldims = &stwc->dims;
+
+   typedef int (*compf_t)(const void *left, const void *right);
+
+   /* compf_t compf = trec_sort_alpha; */
+   compf_t compf = trec_sort_t_freq;
+   /* compf_t compf = trec_sort_g_freq; */
+
+   qsort((void*)list, length, sizeof(TREC*), compf);
+
+   columnize_pager(&ceif_trec, (const void**)list, length, coldims);
+}
+
 
 void show_thesaurus_word_callback(TTABS *ttabs, RecID *list, int length, void *data)
 {
@@ -453,13 +571,19 @@ void show_thesaurus_word_callback(TTABS *ttabs, RecID *list, int length, void *d
    word_list_user wlu = show_word_columns; // production, from columnify.c
 
    if (flag_stack_report)
-      printf("Stack report for alloca method.\n");
+      printf("Stack report for trec_list alloca method.\n");
 
-   build_word_list_alloca(ttabs, list, length, wlu, closure);
+   build_trec_list_alloca(ttabs, list, length, show_trec_columns, closure);
 
    if (flag_stack_report)
    {
-      printf("Stack report for recursive/vla method.\n");
+      printf("Stack report for word_list alloca method.\n");
+      build_word_list_alloca(ttabs, list, length, wlu, closure);
+   }
+
+   if (flag_stack_report)
+   {
+      printf("Stack report for word_list recursive/vla method.\n");
       build_word_list_recurse(ttabs, list, length, wlu, closure);
    }
 }
