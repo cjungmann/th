@@ -9,10 +9,11 @@ extern const char *thesaurus_name;
 typedef DataSize (*tword_ranker)(void *ranker, const char *word, int len);
 
 typedef struct _tword_head {
-   bool     is_root;
-   DataSize count;
-   DataSize frank;
-   char     value[];
+   DataSize rec_length;
+   DataSize is_root;   // flag for root word
+   DataSize count;     // frequency in thesaurus
+   DataSize frank;     // frequency in google words
+   char     value[];   
 } TREC;
 
 typedef struct _thesaurus_tables {

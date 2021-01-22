@@ -123,6 +123,7 @@ Result ttabs_add_word_imp(TTABS *ttabs, const char *str, int size, bool newline)
 
          // Set the record values
          ++trec->count;
+         trec->rec_length = bufflen;
          trec->frank = TTB.get_rank_from_ranker(ttabs, str, size);
          if (newline)
             ++trec->is_root;
