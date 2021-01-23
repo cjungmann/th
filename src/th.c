@@ -588,6 +588,40 @@ void show_thesaurus_word_callback(TTABS *ttabs, RecID *list, int length, void *d
    }
 }
 
+CPRD th_page_control(int page_current, int page_count, COLDIMS *dims)
+{
+   struct stwc_closure *stwc = (struct stwc_closure*)dims->closure;
+
+   printf("\x1b[34;1m%s\x1b[m related words\n"
+          "\x1b[34;1mf\x1b[m" "irst "
+          "\x1b[34;1mp\x1b[m" "revious "
+          "\x1b[34;1mn\x1b[m" "ext "
+          "\x1b[34;1ml\x1b[m" "ast "
+          "\x1b[34;1mq\x1b[m" "uit",
+          stwc->word
+      );
+
+   fflush(stdout);     // Force printing without newline
+   printf("\x1b[1G"); // Move cursor to column 1
+
+   const char *keys[] = { "q", "f", "p", "n", "l" };
+   int index = await_keypress(keys, sizeof(keys)/sizeof(keys[0]));
+
+   // Erase screen unless exiting
+   if (index > 0)
+      printf("\x1b[2K");
+
+   switch(index)
+   {
+      case 0: return CPR_QUIT;
+      case 1: return CPR_FIRST;
+      case 2: return CPR_PREVIOUS;
+      case 3: return CPR_NEXT;
+      case 4: return CPR_LAST;
+      default: return CPR_NO_RESPONSE;
+   }
+}
+
 /**
  * Fulfills command line option -t (or non-option argument)
  * to show the list of words related to the *word* argument.
@@ -607,7 +641,9 @@ int show_thesaurus_word(const char *word)
       if (id)
       {
          struct stwc_closure closure = { &ttabs, word, id };
-         columnize_default_dims(&closure.dims);
+         columnize_default_dims(&closure.dims, &closure);
+         closure.dims.reserve_lines = 3;
+         closure.dims.pcontrol = th_page_control;
          
          TTB.get_words(ttabs.db_r2w, &ttabs, id, show_thesaurus_word_callback, &closure);
       }
@@ -708,7 +744,7 @@ int enumerate_words(void)
    TTB.init(&ttabs);
    if ((result = open_existing_thesaurus(&ttabs)))
    {
-      printf("Error opening %s: %s.\n", thesaurus_name, db_strerror(result));
+      printf("enumerate_words error opening %s: %s.\n", thesaurus_name, db_strerror(result));
       return 0;
    }
    else
