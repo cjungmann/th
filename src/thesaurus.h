@@ -24,8 +24,18 @@ typedef struct _thesaurus_tables {
    tword_ranker ranker;
 } TTABS;
 
+typedef struct _tword_result {
+   RecID      tword;
+   RecID      *entries;
+   int        entries_count;
+   RecID      *roots;
+   int        roots_count;
+} TRESULT;
+
+
 typedef void (*recid_list_user)(TTABS *ttabs, RecID *list, int len, void *closure);
 typedef void (*tword_user)(TTABS *ttabs, RecID id, TREC *trec, int word_len, void *closure);
+typedef void (*tresult_user)(TTABS *ttabs, TRESULT *tresult, void *closure);
 
 typedef void   (*ttabs_init)           (TTABS *ttabs);
 typedef Result (*ttabs_open)           (TTABS *ttabs, const char *name, bool create);
@@ -35,12 +45,14 @@ typedef Result (*ttabs_get_word_rec)   (TTABS *ttabs, RecID id, TREC *buffer, Da
 typedef RecID  (*ttabs_lookup)         (TTABS *ttabs, const char *str);
 typedef Result (*ttabs_get_words)      (DB *db, TTABS *ttabs, RecID id,
                                         recid_list_user user, void *closure);
+typedef Result (*ttabs_get_result)     (TTABS *ttabs, RecID id, tresult_user user, void *closure);
 typedef Result (*ttabs_walk_entries)   (TTABS *ttabs, tword_user user, void *closure);
 typedef int    (*ttabs_count_synonyms) (TTABS *ttabs, RecID id);
 typedef DataSize (*ttabs_word_rank)    (TTABS *ttabs, const char *word, int size);
 
 bool save_thesaurus_word(const char *str, int size, bool newline, void *data);
 bool thesaurus_dumpster(DBT* key, DBT* value, void *data);
+
 
 typedef struct ttabs_class {
    ttabs_init           init;
@@ -50,6 +62,7 @@ typedef struct ttabs_class {
    ttabs_get_word_rec   get_word_rec;
    ttabs_lookup         lookup;
    ttabs_get_words      get_words;
+   ttabs_get_result     get_result;
    ttabs_walk_entries   walk_entries;
    ttabs_count_synonyms count_synonyms;
    ttabs_word_rank      get_rank_from_ranker;

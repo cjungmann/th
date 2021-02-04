@@ -25,6 +25,7 @@ Result ttabs_add_word_imp(TTABS *ttabs, const char *str, int size, bool newline)
 Result ttabs_get_word_rec_imp(TTABS *ttabs, RecID id, TREC *buffer, DataSize size);
 RecID  ttabs_lookup_imp(TTABS *ttabs, const char *str);
 Result ttabs_get_words_imp(DB *db, TTABS *ttabs, RecID id, recid_list_user user, void *closure);
+Result ttabs_get_result_imp (TTABS *ttabs, RecID id, tresult_user user, void *closure);
 Result ttabs_walk_entries_imp(TTABS *ttabs, tword_user user, void *closure);
 int ttabs_count_synonyms_imp(TTABS *ttabs, RecID id);
 DataSize ttabs_word_rank_imp(TTABS *ttabs, const char *word, int size);
@@ -42,6 +43,7 @@ TTABS_Class TTB = {
    ttabs_get_word_rec_imp,
    ttabs_lookup_imp,
    ttabs_get_words_imp,
+   ttabs_get_result_imp,
    ttabs_walk_entries_imp,
    ttabs_count_synonyms_imp,
    ttabs_word_rank_imp
@@ -311,6 +313,52 @@ Result ttabs_get_words_imp(DB *db, TTABS *ttabs, RecID id, recid_list_user user,
    return result;
 }
 
+struct get_result_closure {
+   TRESULT      *tresult;
+   tresult_user user;
+   void         *closure;
+};
+
+
+void ttabs_get_result_stage_two(TTABS *ttabs, RecID *list, int len, void *closure)
+{
+   // Saving word to roots list
+   struct get_result_closure *rclosure = (struct get_result_closure*)closure;
+   rclosure->tresult->roots = list;
+   rclosure->tresult->roots_count = len;
+
+   (*rclosure->user)(ttabs, rclosure->tresult, rclosure->closure);
+}
+
+void ttabs_get_result_stage_one(TTABS *ttabs, RecID *list, int len, void *closure)
+{
+   // Saving root to words list
+   struct get_result_closure *rclosure = (struct get_result_closure*)closure;
+   rclosure->tresult->entries = list;
+   rclosure->tresult->entries_count = len;
+
+   ttabs_get_words_imp(ttabs->db_w2r,
+                       ttabs,
+                       rclosure->tresult->tword,
+                       ttabs_get_result_stage_two,
+                       closure);
+}
+
+Result ttabs_get_result_imp(TTABS *ttabs, RecID id, tresult_user user, void *closure)
+{
+   TRESULT tresult = { id };
+   memset(&tresult, 0, sizeof(tresult));
+   tresult.tword = id;
+
+   struct get_result_closure rclosure = { &tresult, user, closure };
+
+   return ttabs_get_words_imp(ttabs->db_r2w,
+                              ttabs,
+                              id,
+                              ttabs_get_result_stage_one,
+                              &rclosure);
+}
+
 /**
  * For each word record in the table, this function will call
  * the *user* function with the record and the *closure*.
@@ -545,22 +593,54 @@ Result open_existing_thesaurus(TTABS *ttabs)
 #include "rrtable.c"
 #include "utils.c"
 
-void test_TTABS_opener(void)
+void test_result_user(TTABS *ttabs, TRESULT *tresult, void *closure)
 {
-   const char *tname = "ttabs_test";
-   Result result;
-   TTABS ttabs;
-   TTB.init(&ttabs);
+   char buff[128];
+   TREC *trec = (TREC*)buff;
+   TTB.get_word_rec(ttabs, tresult->tword, trec, sizeof(buff));
 
-   if ((result = TTB.open(&ttabs, tname, 0)))
-      printf("Failed to build \"%s\".\n", tname);
+   printf("\nfor entry \x1b[32;1m%s\x1b[m, there are\n"
+          "%d synonyms, and\n"
+          "%d roots that include the word.\n",
+          trec->value,
+          tresult->entries_count,
+          tresult->roots_count);
+}
+
+void test_get_result(TTABS *ttabs, const char *str)
+{
+   RecID id = TTB.lookup(ttabs, str);
+   if ( id < 1 )
+      printf("Failed to find entry for %s.\n", str);
    else
-      printf("Successfully created \"%s\".\n", tname);
+      TTB.get_result(ttabs, id, test_result_user, NULL);
 }
 
 int main(int argc, const char **argv)
 {
-   test_TTABS_opener();
+   const char *tname = "../thesaurus";
+   Result result;
+   TTABS ttabs;
+   TTB.init(&ttabs);
+
+   if ((result = TTB.open(&ttabs, tname, 1)))
+      printf("Failed to build \"%s\".\n", tname);
+   else
+   {
+      if (argc == 1)
+         printf("Successfully opened \"%s\".\n", tname);
+      else
+      {
+         const char **ptr = argv + 1;
+         const char **end = argv + argc;
+
+         while (ptr < end)
+         {
+            test_get_result(&ttabs, *ptr);
+            ++ptr;
+         }
+      }
+   }
 
    return 0;
 }
