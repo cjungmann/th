@@ -592,13 +592,15 @@ CPRD th_page_control(int page_current, int page_count, COLDIMS *dims)
 {
    struct stwc_closure *stwc = (struct stwc_closure*)dims->closure;
 
-   printf("\x1b[34;1m%s\x1b[m related words\n"
+   printf("\x1b[34;1m%s\x1b[m related words (page %d of %d)\n"
           "\x1b[34;1mf\x1b[m" "irst "
           "\x1b[34;1mp\x1b[m" "revious "
           "\x1b[34;1mn\x1b[m" "ext "
           "\x1b[34;1ml\x1b[m" "ast "
           "\x1b[34;1mq\x1b[m" "uit",
-          stwc->word
+          stwc->word,
+          page_current,
+          page_count
       );
 
    fflush(stdout);     // Force printing without newline
@@ -655,7 +657,6 @@ int show_thesaurus_word(const char *word)
 
    return 0;
 }
-
 
 int thesaurus_word_by_recid(int recid)
 {
