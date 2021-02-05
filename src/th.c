@@ -18,6 +18,8 @@
 #include "get_keypress.h"
 #include "columnize.h"
 
+#include "th.h"
+
 // thesaurus_name moved to thesaurus.c
 const char *thesaurus_word=NULL;
 int thesaurus_recid=0;
@@ -207,16 +209,6 @@ int update_thesaurus_word_frequencies(void)
   abandon_function:
       return result;
 }
-
-/**
- * Internal function pointer typedef
- *
- * Using a typedef allows me to try different methods
- * of collecting words, mainly using *alloc* or AVOIDING
- * *alloca* by using recursion and VLA instead.
- */
-typedef void (*word_list_user)(const char **list, int length, void *closure);
-typedef void (*trec_list_user)(const TREC **list, int length, void *closure);
 
 /**
  * This "closure" contains all the variables needed by
@@ -456,22 +448,10 @@ void show_word_list(const char **list, int length, void *closure)
    }
 }
 
-struct stwc_closure {
-   TTABS      *ttabs;
-   const char *word;
-   RecID      id;
-   COLDIMS    dims;
-};
-
-
 void show_word_columns(const char **list, int length, void *closure)
 {
    assert(closure);
-
-   struct stwc_closure *stwc = (struct stwc_closure*)closure;
-   COLDIMS *coldims = &stwc->dims;
-
-   columnize_string_pager(list, length, coldims);
+   columnize_string_pager(list, length, closure);
 }
 
 /*
@@ -540,11 +520,6 @@ const CEIF ceif_trec = { trec_get_len, trec_print, trec_print_cell };
 
 void show_trec_columns(const TREC **list, int length, void *closure)
 {
-   assert(closure);
-
-   struct stwc_closure *stwc = (struct stwc_closure*)closure;
-   COLDIMS *coldims = &stwc->dims;
-
    typedef int (*compf_t)(const void *left, const void *right);
 
    /* compf_t compf = trec_sort_alpha; */
@@ -553,15 +528,16 @@ void show_trec_columns(const TREC **list, int length, void *closure)
 
    qsort((void*)list, length, sizeof(TREC*), compf);
 
-   columnize_pager(&ceif_trec, (const void**)list, length, coldims);
+   columnize_pager(&ceif_trec, (const void**)list, length, closure);
 }
 
 
-void show_thesaurus_word_callback(TTABS *ttabs, RecID *list, int length, void *data)
+void show_thesaurus_word_callback(TTABS *ttabs, RecID *list, int length, void *closure)
 {
-   struct stwc_closure *closure = (struct stwc_closure*)data;
+   COLDIMS *coldims = (COLDIMS*)closure;
+   struct stwc_closure *stwc = (struct stwc_closure*)coldims->closure;
 
-   printf("Displaying a list of %d synonyms for %s.\n", length, closure->word);
+   printf("Displaying a list of %d synonyms for %s.\n", length, stwc->word);
 
    /* show_recid_recid_list(list, length); */
    /* show_recid_word_list(ttabs, list, length); */
@@ -643,11 +619,15 @@ int show_thesaurus_word(const char *word)
       if (id)
       {
          struct stwc_closure closure = { &ttabs, word, id };
-         columnize_default_dims(&closure.dims, &closure);
-         closure.dims.reserve_lines = 3;
-         closure.dims.pcontrol = th_page_control;
+
+         COLDIMS dims;
+         memset(&dims, 0, sizeof(COLDIMS));
+
+         columnize_default_dims(&dims, &closure);
+         dims.reserve_lines = 3;
+         dims.pcontrol = th_page_control;
          
-         TTB.get_words(ttabs.db_r2w, &ttabs, id, show_thesaurus_word_callback, &closure);
+         TTB.get_words(ttabs.db_r2w, &ttabs, id, show_thesaurus_word_callback, &dims);
       }
       else
          fprintf(stderr, "Failed to find \"%s\" in the thesaurus.\n", word);
