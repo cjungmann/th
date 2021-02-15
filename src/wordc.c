@@ -1,9 +1,10 @@
 #include "wordc.h"
 #include "utils.h"
 #include <ctype.h>   // for isspace
-#include <stdlib.h>  // for atol()
 #include <string.h>  // for memcpy()
-#include <alloca.h>
+#define __USE_MISC
+#include <stdlib.h>  // for atol()
+/* #include <alloca.h> */
 
 #include <sys/types.h> // for open(), read()
 #include <sys/stat.h>
