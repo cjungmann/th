@@ -51,6 +51,7 @@ TTABS_Class TTB = {
 
 void ttabs_init_imp(TTABS *ttabs)
 {
+   memset(ttabs, 0, sizeof(TTABS));
    init_IVTable(&ttabs->ivt);
    ttabs->db_r2w = NULL;
    ttabs->db_w2r = NULL;
