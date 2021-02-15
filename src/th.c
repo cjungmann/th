@@ -1,10 +1,11 @@
 #include <string.h>
 #include <strings.h>  // for strcasecmp()
 #include <readargs.h>
-#include <stdlib.h>  // for qsort (alloca in BSD?)
-#include <alloca.h>
 #include <limits.h>
 #include <assert.h>
+#define __USE_MISC
+#include <stdlib.h>  // for qsort (alloca in BSD?)
+/* #include <alloca.h> */
 
 #include "bdb.h"
 #include "ivtable.h"
@@ -448,11 +449,11 @@ void show_word_list(const char **list, int length, void *closure)
    }
 }
 
-void show_word_columns(const char **list, int length, void *closure)
-{
-   assert(closure);
-   columnize_string_pager(list, length, closure);
-}
+/* void show_word_columns(const char **list, int length, void *closure) */
+/* { */
+/*    assert(closure); */
+/*    columnize_string_pager(list, length, closure); */
+/* } */
 
 /*
  * Section of TREC columns stuff, including a CEIF implementation,
@@ -479,6 +480,10 @@ int trec_print_cell(FILE *f, const void *el, int width)
 
    return fprintf(f, "%-*.*s", width, word_len, rec->value);
 }
+
+const CEIF ceif_trec = { trec_get_len, trec_print, trec_print_cell };
+
+
 
 int trec_sort_alpha(const void *left, const void *right)
 {
@@ -516,127 +521,20 @@ int trec_sort_g_freq(const void *left, const void *right)
    return rec_left->frank - rec_right->frank;
 }
 
-const CEIF ceif_trec = { trec_get_len, trec_print, trec_print_cell };
+/* void show_trec_columns(const TREC **list, int length, void *closure) */
+/* { */
+/*    typedef int (*compf_t)(const void *left, const void *right); */
 
-void show_trec_columns(const TREC **list, int length, void *closure)
-{
-   typedef int (*compf_t)(const void *left, const void *right);
+/*    /\* compf_t compf = trec_sort_alpha; *\/ */
+/*    compf_t compf = trec_sort_t_freq; */
+/*    /\* compf_t compf = trec_sort_g_freq; *\/ */
 
-   /* compf_t compf = trec_sort_alpha; */
-   compf_t compf = trec_sort_t_freq;
-   /* compf_t compf = trec_sort_g_freq; */
+/*    qsort((void*)list, length, sizeof(TREC*), compf); */
 
-   qsort((void*)list, length, sizeof(TREC*), compf);
-
-   columnize_pager(&ceif_trec, (const void**)list, length, closure);
-}
+/*    columnize_pager(&ceif_trec, (const void**)list, length, closure); */
+/* } */
 
 
-void show_thesaurus_word_callback(TTABS *ttabs, RecID *list, int length, void *closure)
-{
-   COLDIMS *coldims = (COLDIMS*)closure;
-   struct stwc_closure *stwc = (struct stwc_closure*)coldims->closure;
-
-   printf("Displaying a list of %d synonyms for %s.\n", length, stwc->word);
-
-   /* show_recid_recid_list(list, length); */
-   /* show_recid_word_list(ttabs, list, length); */
-
-   /* word_list_user = show_word_list;        // local, for debugging */
-   /* word_list_user wlu = show_words;        // production, from term.c */
-   word_list_user wlu = show_word_columns; // production, from columnify.c
-
-   if (flag_stack_report)
-      printf("Stack report for trec_list alloca method.\n");
-
-   build_trec_list_alloca(ttabs, list, length, show_trec_columns, closure);
-
-   if (flag_stack_report)
-   {
-      printf("Stack report for word_list alloca method.\n");
-      build_word_list_alloca(ttabs, list, length, wlu, closure);
-   }
-
-   if (flag_stack_report)
-   {
-      printf("Stack report for word_list recursive/vla method.\n");
-      build_word_list_recurse(ttabs, list, length, wlu, closure);
-   }
-}
-
-CPRD th_page_control(int page_current, int page_count, COLDIMS *dims)
-{
-   struct stwc_closure *stwc = (struct stwc_closure*)dims->closure;
-
-   printf("\x1b[34;1m%s\x1b[m related words (page %d of %d)\n"
-          "\x1b[34;1mf\x1b[m" "irst "
-          "\x1b[34;1mp\x1b[m" "revious "
-          "\x1b[34;1mn\x1b[m" "ext "
-          "\x1b[34;1ml\x1b[m" "ast "
-          "\x1b[34;1mq\x1b[m" "uit",
-          stwc->word,
-          page_current,
-          page_count
-      );
-
-   fflush(stdout);     // Force printing without newline
-   printf("\x1b[1G"); // Move cursor to column 1
-
-   const char *keys[] = { "q", "f", "p", "n", "l" };
-   int index = await_keypress(keys, sizeof(keys)/sizeof(keys[0]));
-
-   // Erase screen unless exiting
-   if (index > 0)
-      printf("\x1b[2K");
-
-   switch(index)
-   {
-      case 0: return CPR_QUIT;
-      case 1: return CPR_FIRST;
-      case 2: return CPR_PREVIOUS;
-      case 3: return CPR_NEXT;
-      case 4: return CPR_LAST;
-      default: return CPR_NO_RESPONSE;
-   }
-}
-
-/**
- * Fulfills command line option -t (or non-option argument)
- * to show the list of words related to the *word* argument.
- */
-int show_thesaurus_word(const char *word)
-{
-   // Eventually, we'll show all the words, so we need to
-   // use all the resources in the Thesaurus-TABleS
-   Result result;
-   TTABS ttabs;
-      
-   TTB.init(&ttabs);
-   if (!(result = open_existing_thesaurus(&ttabs)))
-   {
-      RecID id = TTB.lookup(&ttabs, word);
-
-      if (id)
-      {
-         struct stwc_closure closure = { &ttabs, word, id };
-
-         COLDIMS dims;
-         memset(&dims, 0, sizeof(COLDIMS));
-
-         columnize_default_dims(&dims, &closure);
-         dims.reserve_lines = 3;
-         dims.pcontrol = th_page_control;
-         
-         TTB.get_words(ttabs.db_r2w, &ttabs, id, show_thesaurus_word_callback, &dims);
-      }
-      else
-         fprintf(stderr, "Failed to find \"%s\" in the thesaurus.\n", word);
-
-      TTB.close(&ttabs);
-   }
-
-   return 0;
-}
 
 int thesaurus_word_by_recid(int recid)
 {
