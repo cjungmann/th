@@ -1,5 +1,3 @@
-.SHELL: ${/usr/bin/env bash}
-
 TARGET = th
 
 TH_HOME=/usr/local/bin
@@ -11,21 +9,51 @@ ETC_CONTENT="${DB_HOME}/${DB_NAME}"
 CFLAGS = -Wall -Werror -std=c99 -pedantic -m64 -ggdb
 SRC=./src/
 
-EXTRA_SOURCE != if ! [ -e ${SRC}get_keypress.c ]; then echo ${SRC}get_keypress.c ${SRC}columnize.c; fi
+# Bolster modules list with files from github.com/cjungmann/c_patterns.git:
+EXTRA_SOURCE != if ! [ -e ${SRC}get_keypress.c ]; then echo ${SRC}get_keypress.c ${SRC}columnize.c ${SRC}prompter.c; fi
 
 LIB_SOURCE != ls -1 ${SRC}*.c
 LIB_SOURCE := ${EXTRA_SOURCE} ${LIB_SOURCE}
 LIB_MODULES != echo ${LIB_SOURCE} | sed 's/\.c/\.o/g'
 LIBS = -ldb -lreadargs
 
+#(for FreeBSD, which uses a too old version)
+# Check for and use version 5 of Berkeley Database
+DB_DEFAULT_OK != if grep -q "VERSION_MAJOR[[:space:]]\+[[:digit:]]" /usr/include/db.h; then echo 1; else echo 0; fi
+DB_EXPLICIT_DB5 != find /usr -name db.h 2>/dev/null | grep db5
+DB_NEED_DB5 != d=${DB_DEFAULT_OK}; e=${DB_EXPLICIT_DB5}; if [ "$$d" -eq 0 ] && [ -z "$$e" ]; then echo 1; else echo 0; fi
+DB5_WARNING != n=${DB_NEED_DB5}; if [ "$$n" -eq 1 ]; then echo "@echo Install db5; exit 1"; fi
+
+# Add -I include path, if found
+DB5_INCLUDE != o=${DB_DEFAULT_OK}; v=${DB_EXPLICIT_DB5}; if [ "$$o" -eq 0 ] && [ -n "$$v" ]; then echo -I"$${v%/*}"; fi
+# Add -L library path, if found
+DB5_LIBRARY_PATH != find /usr -name libdb.so 2>/dev/null | grep db5
+DB5_LIB != o=${DB_DEFAULT_OK}; v=${DB5_LIBRARY_PATH}; if [ "$$o" -eq 0 ] && [ -n "$$v" ]; then echo -L"$${v%/*}"; fi
+
+CFLAGS := ${CFLAGS} ${DB5_INCLUDE}
+
 .PHONY: all
-all: ${TARGET} thesaurus.db dict.db files/count_1w.txt
+all: confirm ${TARGET} thesaurus.db files/count_1w.txt # dict.db
 
 ${TARGET}: ${LIB_MODULES}
-	${CC} ${CFLAGS} -o $@ ${LIB_MODULES} ${LIBS}
+	${CC} ${CFLAGS} ${DB5_LIB} -o $@ ${LIB_MODULES} ${LIBS}
 
 %.o: %.c
 	${CC} ${CFLAGS} -c -o $@ $<
+
+.PHONY: test
+test:
+	@echo DB_HAS_VERSION is ${DB_HAS_VERSION}
+	@echo DB_EXPLICIT_DB5 is ${DB_EXPLICIT_DB5}
+	@echo DB_NEED_DB5 is ${DB_NEED_DB5}
+	@echo DB5_WARNING is ${DB5_WARNING}
+	@echo DB5_INCLUDE is ${DB5_INCLUDE}
+	@echo DB5_LIB is ${DB5_LIB}
+
+
+.PHONY: confirm
+confirm:
+	${DB5_WARNING}
 
 # Link from c_patterns
 ${SRC}get_keypress.c:
@@ -33,6 +61,7 @@ ${SRC}get_keypress.c:
 	git clone http://www.github.com/cjungmann/c_patterns.git
 	cp -s ${PWD}/c_patterns/get_keypress.* src
 	cp -s ${PWD}/c_patterns/columnize.* src
+	cp -s ${PWD}/c_patterns/prompter.* src
 
 # Download and import thesaurus entries
 thesaurus.db : files/mthesaur.txt
@@ -98,5 +127,6 @@ clean:
 
 	rm -f src/get_keypress.*
 	rm -f src/columnize.*
+	rm -f src/prompter.*
 	rm -rf c_patterns
 
