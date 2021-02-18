@@ -1,3 +1,29 @@
+# Thesaurus Project th
+
+Let's talk about [thesaurus.com](thesaurus.com).  I love the way it
+breaks down entries into categories with consideration to the part
+of speach.  However, there are several things I don't like.
+- Paginated.  Most words have several pages.  The word *cut* has 46 pages.
+- Not convenient for scanning.
+- Not convenient for keyboard use.
+- Filled with ads.
+
+I have long used [thesaurus.com](thesaurus.com), despite my gripes,
+because, when writing, I often need to find just the right word to
+express my thoughts more gracefully.
+
+As an experiment using the Berkeley Database (*bdb*), I have created
+a console-based thesaurus using a public domain thesaurus (see below).
+My implementation is less organized, but much easier to navigate.  I
+no longer visit [thesaurus.com](thesaurus.com).
+
+## Usage
+
+With **th** built and installed, open a new console window, type
+`th` followed by the word for which you need synonyms.
+
+
+
 # Berkeley Database Study
 
 The Berkeley Database (*bdb*) seems like an interesting database
