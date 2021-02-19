@@ -66,17 +66,16 @@ void resort_trec_list(PPARAMS *params, int order)
    qsort(list, length, sizeof(TREC*),  sorter);
 }
 
-
 void result_trec_user(const TREC **list, int length, void *closure)
 {
-   /* struct stwc_closure *stwc = (struct stwc_closure*)closure; */
+   struct stwc_closure *stwc = (struct stwc_closure*)closure;
 
    int maxlen = columnize_get_max_len(&ceif_trec, (const void **)list, (const void**)list+length);
    PPARAMS params;
    PPARAMS_init(&params,
                 (const void **)list, length,
                 2,       // gutter size
-                3,       // reserve lines (for prompt under columns)
+                4,       // reserve lines (one at top, three below for prompt/menu)
                 maxlen);
    PPARAMS_query_screen(&params);
 
@@ -90,6 +89,7 @@ void result_trec_user(const TREC **list, int length, void *closure)
       curmenu = &main_menu;
 
       prompter_reuse_line();
+      printf(" - - - - - Synonyms for \x1b[33;1m%s\x1b[m - - - - -\n", stwc->word);
       const void **stop = (*flower)(&ceif_trec,
                                     ptr,
                                     params.end,
@@ -97,7 +97,8 @@ void result_trec_user(const TREC **list, int length, void *closure)
                                     params.columns_to_show,
                                     params.lines_to_show);
 
-      columnize_print_progress(&params, stop);
+      printf("Synonyms for \x1b[33;1m%s\x1b[m: ", stwc->word);
+      columnize_print_progress_line(&params, stop);
 
      recheck_user_response:
       prompter_reuse_line();
