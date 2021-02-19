@@ -22,7 +22,7 @@ LIBS = -ldb -lreadargs
 DB_DEFAULT_OK != if grep -q "VERSION_MAJOR[[:space:]]\+[[:digit:]]" /usr/include/db.h; then echo 1; else echo 0; fi
 DB_EXPLICIT_DB5 != find /usr -name db.h 2>/dev/null | grep db5
 DB_NEED_DB5 != d=${DB_DEFAULT_OK}; e=${DB_EXPLICIT_DB5}; if [ "$$d" -eq 0 ] && [ -z "$$e" ]; then echo 1; else echo 0; fi
-DB5_WARNING != n=${DB_NEED_DB5}; if [ "$$n" -eq 1 ]; then echo "@echo Install db5; exit 1"; fi
+DB5_WARNING != n=${DB_NEED_DB5}; if [ "$$n" -eq 1 ]; then echo "@echo You need db version 5.  Please install db5, then remake.; exit 1"; fi
 
 # Add -I include path, if found
 DB5_INCLUDE != o=${DB_DEFAULT_OK}; v=${DB_EXPLICIT_DB5}; if [ "$$o" -eq 0 ] && [ -n "$$v" ]; then echo -I"$${v%/*}"; fi
