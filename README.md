@@ -74,12 +74,20 @@ take some time:
    from a longer list.  This is not working right now.  I'm not
    sure I'll come back to this because I'm finding an alphapetic
    order is far easier to use.
-   
+
+## Future Possibilities
+
+I just noticed that there is a [Moby Part of Speech list][6] resource
+that may help organizing the output.  It's intriguing, but I'm not
+sure it will be helpful, based on how much alphabetical sorting helps
+with using the output.  We'll see.
+
 [1]: "https://www.thesaurus.com/"               "thesaurus.com"
 [2]: "https://github.com/cjungmann/readargs"    "readargs library"
 [3]: "https://github.com/cjungmann/c_patterns"  "c_patterns"
 [4]: "http://gutenberg.org/ebooks/3202"         "Moby Thesaurus"
-[4]: "http://gutenberg.org/"                    "The Gutenberg Project"
+[5]: "http://gutenberg.org/"                    "The Gutenberg Project"
+[6]: "http://gutenberg.org/ebooks/3203"         "Moby Part of Speech List"
 
 # Berkeley Database Study
 
@@ -145,6 +153,10 @@ If Norvig is a problem, I want to remember this alternate list
 with which I may replace it.
 
 ## Dictionary
+
+This part is no longer attempted.  The Makefile still includes
+instructions for downloading this information, and the files that
+help interpret the source are still included in the repository.
 
 Grouping synonyms by part of speech (ie noun, verb, adjective, etc.)
 has potential to be useful, as well.  The first problem is in identifying
