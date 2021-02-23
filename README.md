@@ -25,8 +25,8 @@ With **th** built and installed, open a new console window, type
 ![Invoke thesaurus](README/th_call.png)
 
 The output is in columns for easier scanning, with context lines on
-top and bottom, with a list of options at the bottom for navigation
-and other options.
+top and bottom, and a list of options at the bottom for navigation
+and an option for other menus for changing the sorting or flow.
 
 ![Thesaurus screen](README/th_example.png)
 
@@ -35,8 +35,51 @@ character of the option.  For example, click `n` to go to the next
 page, `p` to go back one page.  Respecting *nix convention, typing
 `q` quits the program, leaving the current set of words on screen.
 
+## Building
 
-[1]: "https://www.thesaurus.com/" "thesaurus.com"
+### Dependencies
+
+1. [readargs][2] is one of my projects that processes command line
+   arguments.  Please download/clone, build and install this library.
+
+2. [c_patterns][3] is another of my projects, an experiment in
+   managing reusable code without needing a library.  The makefile will
+   download and make links to some [c_patterns][3] modules in the
+   **src** directory to be included in the **th** build.
+
+3. **db version 5** (Berkeley Database) is necessary for the B-Tree
+   databases in the project.  If you're using **git**, you should
+   already have this, but *FreeBSD* only includes an older version
+   of **db**.  Make will immediately terminate with a message if
+   it can't find an appropriate **db**, in which case it's up to
+   you to use your package manager to install **db**.
+
+### Build and Install
+
+Once all of the dependencies are provided, building the project
+is a simple matter of invoking **make**, then **make install**.
+
+#### Make Targets
+
+As expected, **make** will compile the **th** application.
+Unconventionally, perhaps, **make** performs other tasks that may
+take some time:
+
+1. Download and import the public domain [moby thesaurus][4] from
+   [The Gutenberg Project][4].  This populates the application's
+   word database.
+
+2. Download and import a word count database.  The idea is to
+   offer alternate sorting orders to make it easier to find a word
+   from a longer list.  This is not working right now.  I'm not
+   sure I'll come back to this because I'm finding an alphapetic
+   order is far easier to use.
+   
+[1]: "https://www.thesaurus.com/"               "thesaurus.com"
+[2]: "https://github.com/cjungmann/readargs"    "readargs library"
+[3]: "https://github.com/cjungmann/c_patterns"  "c_patterns"
+[4]: "http://gutenberg.org/ebooks/3202"         "Moby Thesaurus"
+[4]: "http://gutenberg.org/"                    "The Gutenberg Project"
 
 # Berkeley Database Study
 
