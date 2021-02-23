@@ -1,6 +1,6 @@
 # Thesaurus Project th
 
-Let's talk about [thesaurus.com][1].  I love the way it
+Let's talk about [thesaurus].  I love the way it
 breaks down entries into categories with consideration to the part
 of speach.  However, there are several things I don't like.
 - Paginated.  Most words have several pages.  The word *cut* has 46 pages.
@@ -8,14 +8,14 @@ of speach.  However, there are several things I don't like.
 - Not convenient for keyboard use.
 - Filled with ads.
 
-I have long used [thesaurus.com][1], despite my gripes, because, when writing,
+I have long used [thesaurus], despite my gripes, because, when writing,
 I often need to find just the right word to express my thoughts more
 gracefully.
 
 As an experiment using the Berkeley Database (*bdb*), I have created
 a console-based thesaurus using a public domain thesaurus (see below).
 My implementation is less organized, but much easier to navigate.  I
-no longer visit [thesaurus.com][1];
+no longer visit [thesaurus];
 
 ## Usage
 
@@ -82,12 +82,12 @@ that may help organizing the output.  It's intriguing, but I'm not
 sure it will be helpful, based on how much alphabetical sorting helps
 with using the output.  We'll see.
 
-[1]: https://www.thesaurus.com/
-[2]: https://github.com/cjungmann/readargs
-[3]: https://github.com/cjungmann/c_patterns
-[4]: http://gutenberg.org/ebooks/3202
-[5]: http://gutenberg.org/
-[6]: http://gutenberg.org/ebooks/3203
+[thesaurus]: https://www.thesaurus.com/               "thesaurus.com"
+[2]: https://github.com/cjungmann/readargs    "readargs project"
+[3]: https://github.com/cjungmann/c_patterns  "c_patterns project"
+[4]: http://gutenberg.org/ebooks/3202         "Moby Thesaurus"
+[5]: http://gutenberg.org/                    "Gutenberg Home Page"
+[6]: http://gutenberg.org/ebooks/3203         "Moby Part of Speech"
 
 # Berkeley Database Study
 
