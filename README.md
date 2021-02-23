@@ -66,7 +66,7 @@ Unconventionally, perhaps, **make** performs other tasks that may
 take some time:
 
 1. Download and import the public domain [moby thesaurus][4] from
-   [The Gutenberg Project][4].  This populates the application's
+   [The Gutenberg Project][5].  This populates the application's
    word database.
 
 2. Download and import a word count database.  The idea is to
@@ -82,12 +82,12 @@ that may help organizing the output.  It's intriguing, but I'm not
 sure it will be helpful, based on how much alphabetical sorting helps
 with using the output.  We'll see.
 
-[1]: "https://www.thesaurus.com/"               "thesaurus.com"
-[2]: "https://github.com/cjungmann/readargs"    "readargs library"
-[3]: "https://github.com/cjungmann/c_patterns"  "c_patterns"
-[4]: "http://gutenberg.org/ebooks/3202"         "Moby Thesaurus"
-[5]: "http://gutenberg.org/"                    "The Gutenberg Project"
-[6]: "http://gutenberg.org/ebooks/3203"         "Moby Part of Speech List"
+[1]: "https://www.thesaurus.com/"
+[2]: "https://github.com/cjungmann/readargs"
+[3]: "https://github.com/cjungmann/c_patterns"
+[4]: "http://gutenberg.org/ebooks/3202"
+[5]: "http://gutenberg.org/"
+[6]: "http://gutenberg.org/ebooks/3203"
 
 # Berkeley Database Study
 
