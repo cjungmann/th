@@ -16,6 +16,8 @@
  */
 enum poptions {
    PR_OPTIONS = CPR_CUSTOM + 1,
+   PR_FLOW_MENU,
+   PR_SORT_MENU,
    PR_NEWSPAPER,
    PR_PARALLEL,
    PR_ALPHABETIC,
@@ -36,15 +38,29 @@ const PUnit main_menu_units[] = {
 const PMenu main_menu = { main_menu_units, ARRLEN(main_menu_units) };
 
 const PUnit options_menu_units[] = {
-   { "&newspaper flow",      PR_NEWSPAPER },
-   { "&parallel flow",       PR_PARALLEL },
-   { "&alphabetic",          PR_ALPHABETIC },
-   { "&google frequency",    PR_GOOGLE_F },
-   { "&thesaurus frequency", PR_THESAURUS_F },
-   { "&return",              PR_RETURN },
-   { "&quit",                CPR_QUIT }
+   { "&flow",    PR_FLOW_MENU },
+   { "&sort",    PR_SORT_MENU },
+   { "&return",  PR_RETURN },
+   { "&quit",    CPR_QUIT }
 };
 const PMenu options_menu = { options_menu_units, ARRLEN(options_menu_units) };
+
+const PUnit flow_menu_units[] = {
+   { "&newspaper flow", PR_NEWSPAPER },
+   { "&parallel flow",  PR_PARALLEL },
+   { "&return",         PR_RETURN },
+   { "&quit",           CPR_QUIT }
+};
+const PMenu flow_menu = { flow_menu_units, ARRLEN(flow_menu_units) };
+
+const PUnit sort_menu_units[] = {
+   { "&alphabetic",     PR_ALPHABETIC },
+   { "&google freq",    PR_GOOGLE_F },
+   { "&thesaurus freq", PR_THESAURUS_F },
+   { "&return",         PR_RETURN },
+   { "&quit",           CPR_QUIT }
+};
+const PMenu sort_menu = { sort_menu_units, ARRLEN(sort_menu_units) };
 
 void resort_trec_list(PPARAMS *params, int order)
 {
@@ -108,14 +124,8 @@ void result_trec_user(const TREC **list, int length, void *closure)
       {
          case CPR_QUIT:
             goto exit_function;
-         case PR_NEWSPAPER:
-            flower = display_newspaper_columns;
-            ptr = PPARAMS_move(&params, CPR_FIRST);
-            break;
-         case PR_PARALLEL:
-            flower = display_parallel_columns;
-            ptr = PPARAMS_move(&params, CPR_FIRST);
-            break;
+
+            /* Navigation actions */
          case CPR_FIRST:
          case CPR_PREVIOUS:
          case CPR_NEXT:
@@ -129,18 +139,38 @@ void result_trec_user(const TREC **list, int length, void *closure)
                ptr = newptr;
                break;
             }
+            
+            /* Menu-switching actions */
+         case PR_OPTIONS:
+            curmenu = &options_menu;
+            goto recheck_user_response;
+         case PR_FLOW_MENU:
+            curmenu = &flow_menu;
+            goto recheck_user_response;
+         case PR_SORT_MENU:
+            curmenu = &sort_menu;
+            goto recheck_user_response;
+         case PR_RETURN:
+            curmenu = &main_menu;
+            goto recheck_user_response;
+
+            /* Flow menu actions */
+         case PR_NEWSPAPER:
+            flower = display_newspaper_columns;
+            ptr = PPARAMS_move(&params, CPR_FIRST);
+            break;
+         case PR_PARALLEL:
+            flower = display_parallel_columns;
+            ptr = PPARAMS_move(&params, CPR_FIRST);
+            break;
+
+            /* Sort menu actions */
          case PR_ALPHABETIC:
          case PR_GOOGLE_F:
          case PR_THESAURUS_F:
             resort_trec_list(&params, result);
             ptr = PPARAMS_move(&params, CPR_FIRST);
             break;
-         case PR_OPTIONS:
-            curmenu = &options_menu;
-            goto recheck_user_response;
-         case PR_RETURN:
-            curmenu = &main_menu;
-            goto recheck_user_response;
       }
    }
 
