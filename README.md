@@ -82,12 +82,12 @@ that may help organizing the output.  It's intriguing, but I'm not
 sure it will be helpful, based on how much alphabetical sorting helps
 with using the output.  We'll see.
 
-[1]: "https://www.thesaurus.com/"
-[2]: "https://github.com/cjungmann/readargs"
-[3]: "https://github.com/cjungmann/c_patterns"
-[4]: "http://gutenberg.org/ebooks/3202"
-[5]: "http://gutenberg.org/"
-[6]: "http://gutenberg.org/ebooks/3203"
+[1]: https://www.thesaurus.com/
+[2]: https://github.com/cjungmann/readargs
+[3]: https://github.com/cjungmann/c_patterns
+[4]: http://gutenberg.org/ebooks/3202
+[5]: http://gutenberg.org/
+[6]: http://gutenberg.org/ebooks/3203
 
 # Berkeley Database Study
 
