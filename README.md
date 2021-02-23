@@ -1,6 +1,6 @@
 # Thesaurus Project th
 
-Let's talk about [thesaurus.com](thesaurus.com).  I love the way it
+Let's talk about [thesaurus.com][1].  I love the way it
 breaks down entries into categories with consideration to the part
 of speach.  However, there are several things I don't like.
 - Paginated.  Most words have several pages.  The word *cut* has 46 pages.
@@ -8,21 +8,35 @@ of speach.  However, there are several things I don't like.
 - Not convenient for keyboard use.
 - Filled with ads.
 
-I have long used [thesaurus.com](thesaurus.com), despite my gripes,
-because, when writing, I often need to find just the right word to
-express my thoughts more gracefully.
+I have long used [thesaurus.com][1], despite my gripes, because, when writing,
+I often need to find just the right word to express my thoughts more
+gracefully.
 
 As an experiment using the Berkeley Database (*bdb*), I have created
 a console-based thesaurus using a public domain thesaurus (see below).
 My implementation is less organized, but much easier to navigate.  I
-no longer visit [thesaurus.com](thesaurus.com).
+no longer visit [thesaurus.com][1];
 
 ## Usage
 
 With **th** built and installed, open a new console window, type
 `th` followed by the word for which you need synonyms.
 
+![Invoke thesaurus](README/th_call.png)
 
+The output is in columns for easier scanning, with context lines on
+top and bottom, with a list of options at the bottom for navigation
+and other options.
+
+![Thesaurus screen](README/th_example.png)
+
+Use an option by clicking the key corresponding to the highlighted
+character of the option.  For example, click `n` to go to the next
+page, `p` to go back one page.  Respecting *nix convention, typing
+`q` quits the program, leaving the current set of words on screen.
+
+
+[1]: "https://www.thesaurus.com/" "thesaurus.com"
 
 # Berkeley Database Study
 
