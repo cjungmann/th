@@ -15,7 +15,7 @@ gracefully.
 As an experiment using the Berkeley Database (*bdb*), I have created
 a console-based thesaurus using a public domain thesaurus (see below).
 My implementation is less organized, but much easier to navigate.  I
-no longer visit [thesaurus];
+no longer visit [thesaurus].
 
 ## Usage
 
@@ -40,7 +40,7 @@ page, `p` to go back one page.  Respecting *nix convention, typing
 ### Dependencies
 
 1. [readargs][2] is one of my projects that processes command line
-   arguments.  Please download/clone, build and install this library.
+   arguments.  Please download/clone, build and install this library. [2]  
 
 2. [c_patterns][3] is another of my projects, an experiment in
    managing reusable code without needing a library.  The makefile will
@@ -82,7 +82,7 @@ that may help organizing the output.  It's intriguing, but I'm not
 sure it will be helpful, based on how much alphabetical sorting helps
 with using the output.  We'll see.
 
-[thesaurus]: https://www.thesaurus.com/               "thesaurus.com"
+[thesaurus]: https://www.thesaurus.com/       "thesaurus.com"
 [2]: https://github.com/cjungmann/readargs    "readargs project"
 [3]: https://github.com/cjungmann/c_patterns  "c_patterns project"
 [4]: http://gutenberg.org/ebooks/3202         "Moby Thesaurus"
