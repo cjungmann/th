@@ -1,21 +1,17 @@
 # Thesaurus Project th
 
-Let's talk about [thesaurus].  I love the way it
-breaks down entries into categories with consideration to the part
-of speach.  However, there are several things I don't like.
-- Paginated.  Most words have several pages.  The word *cut* has 46 pages.
-- Not convenient for scanning.
-- Not convenient for keyboard use.
-- Filled with ads.
+A thesaurus is a valuable tool for writing.  While an online thesaurus
+is more convenient than a print thesaurus, I still somewhat dread using
+one.  I have often turned to [thesaurus.com], but I don't like the
+experience using it.  There are too many ads, and it takes too long
+to peruse the output for words with many synonyms.  The word *cut*, for
+example, runs to 46 pages.
 
-I have long used [thesaurus], despite my gripes, because, when writing,
-I often need to find just the right word to express my thoughts more
-gracefully.
-
-As an experiment using the Berkeley Database (*bdb*), I have created
-a console-based thesaurus using a public domain thesaurus (see below).
-My implementation is less organized, but much easier to navigate.  I
-no longer visit [thesaurus].
+This project offers an alternative to online thesauri.  As a local
+command-line program designed for keyboard navigation, it is quick
+to open and easy to scan.  It is not as well organized as [thesaurus.com],
+with synonym organized but find your perfect work in much less time
+using **th**.
 
 ## Usage
 
@@ -35,19 +31,27 @@ character of the option.  For example, click `n` to go to the next
 page, `p` to go back one page.  Respecting *nix convention, typing
 `q` quits the program, leaving the current set of words on screen.
 
-## Building
+## Building th
+
+The project is easy to build, but there are some dependencies that
+must be resolved before 
 
 ### Dependencies
 
+1. **git** is used to download some dependencies.  While the project
+   can be built without **git**, it requires some undocumented knowledge
+   about the source files that using **make** avoids.
+
 1. [readargs][2] is one of my projects that processes command line
-   arguments.  Please download/clone, build and install this library. [2]  
+   arguments.  Please download/clone, build and install this library.
 
-2. [c_patterns][3] is another of my projects, an experiment in
-   managing reusable code without needing a library.  The makefile will
-   download and make links to some [c_patterns][3] modules in the
-   **src** directory to be included in the **th** build.
+1. [c_patterns][3] is another of my projects, an experiment in
+   managing reusable code without needing a library.  The makefile
+   uses **git** to download the project, then makes links to some
+   [c_patterns][3] modules in the **src** directory to be included
+   in the **th** build.
 
-3. **db version 5** (Berkeley Database) is necessary for the B-Tree
+1. **db version 5** (Berkeley Database) is necessary for the B-Tree
    databases in the project.  If you're using **git**, you should
    already have this, but *FreeBSD* only includes an older version
    of **db**.  Make will immediately terminate with a message if
@@ -57,9 +61,9 @@ page, `p` to go back one page.  Respecting *nix convention, typing
 ### Build and Install
 
 Once all of the dependencies are provided, building the project
-is a simple matter of invoking **make**, then **make install**.
+is a simple matter of invoking **make**, then **[sudo] make install**.
 
-#### Make Targets
+#### Unorthodox(?) Makefile
 
 As expected, **make** will compile the **th** application.
 Unconventionally, perhaps, **make** performs other tasks that may
@@ -82,14 +86,43 @@ that may help organizing the output.  It's intriguing, but I'm not
 sure it will be helpful, based on how much alphabetical sorting helps
 with using the output.  We'll see.
 
-[thesaurus]: https://www.thesaurus.com/       "thesaurus.com"
+[thesaurus.com]: https://www.thesaurus.com    "www.thesaurus.com"
 [2]: https://github.com/cjungmann/readargs    "readargs project"
 [3]: https://github.com/cjungmann/c_patterns  "c_patterns project"
 [4]: http://gutenberg.org/ebooks/3202         "Moby Thesaurus"
 [5]: http://gutenberg.org/                    "Gutenberg Home Page"
 [6]: http://gutenberg.org/ebooks/3203         "Moby Part of Speech"
 
-# Berkeley Database Study
+## Personal Project Goals
+
+I had several objectives when I started this project.
+
+- I wanted more experience with the **Berkeley Database**.
+  This key-store database underpins many other applications,
+  including **git** and **sqlite**.
+
+- I wanted to practice using some of my [c_patterns][3] project
+  modules.  Using these modules in a real project helps me
+  understand their design flaws and missing features.  I use
+
+  1. **columnize.c** to generate the columnar output,
+  
+  2. **prompter.c** for the minimal option menu at the bottom
+     of the output,
+     
+  3. **get_keypress.c** for non-echoed keypresses, mostly used
+     by **prompter.c**.
+
+- I wanted to practice designing a build process that works both
+  in Gnu Linux and BSD.  This includes identifies missing
+  modules (especially **db**, of which BSD includes a too-old
+  library), and redesigned conditional processing.
+
+- I'm not targeting Windows because it varies more significantly
+  from Linux than BSD, and I don't expect that many Windows users
+  would be comfortable dropping to a command line application.
+
+### Berkeley Database Study
 
 The Berkeley Database (*bdb*) seems like an interesting database
 product.  Its low-level C-library approach seems similar to the
@@ -117,7 +150,7 @@ record would require a lookup of the file location.  I'd like to
 measure the performace diffence to weigh that advantage against
 the storage efficiency of variable-length records.
 
-## Thesaurus Source
+### Thesaurus Source
 
 There are two public-domain sources of thesauri:
 - [Moby Thesaurus](https://www.gutenberg.org/ebooks/3202)
@@ -128,11 +161,13 @@ simpler and thus easier to parse.  The problem is that the synonyms
 are numerous and, lacking organization, much harder to scan when
 searching for an appropriate synonym.
 
-## Organizing Synonyms
+### Organizing Output
 
 With hundreds of synonyms for many words, it is very difficult to
 scan the list to find an appropriate word.  I will try to impose
-some order on the list to make it easier to use.
+some order on the list to make it easier to use.  After using the
+tool for some time, I have concluded that alphabetic order is best.
+It's much easier to return to a word in an alphabetic list.
 
 ## Word Frequency
 
