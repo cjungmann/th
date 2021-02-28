@@ -1,23 +1,24 @@
 TARGET = th
 
-TH_HOME=/usr/local/bin
-DB_HOME=/var/local/lib/th
-DB_NAME=thesaurus
-ETC_TARGET=/etc/th.conf
-ETC_CONTENT="${DB_HOME}/${DB_NAME}"
-
+PREFIX ?= /usr/local
 CFLAGS = -Wall -Werror -std=c99 -pedantic -m64 -ggdb
-SRC=./src/
+SRC = src
+
+TH_HOME = ${PREFIX}/bin
+DB_HOME = /var/local/lib/th
+DB_NAME = thesaurus
+ETC_TARGET = /etc/th.conf
+ETC_CONTENT = ${DB_HOME}/${DB_NAME}
 
 # Bolster modules list with files from github.com/cjungmann/c_patterns.git:
-EXTRA_SOURCE != if ! [ -e ${SRC}get_keypress.c ]; then echo ${SRC}get_keypress.c ${SRC}columnize.c ${SRC}prompter.c; fi
+EXTRA_SOURCE != if ! [ -e ${SRC}/get_keypress.c ]; then echo ${SRC}/get_keypress.c ${SRC}/columnize.c ${SRC}/prompter.c; fi
 
-LIB_SOURCE != ls -1 ${SRC}*.c
+LIB_SOURCE != ls -1 ${SRC}/*.c
 LIB_SOURCE := ${EXTRA_SOURCE} ${LIB_SOURCE}
 LIB_MODULES != echo ${LIB_SOURCE} | sed 's/\.c/\.o/g'
 LIBS = -ldb -lreadargs
 
-#(for FreeBSD, which uses a too old version)
+# (for FreeBSD, which uses a too old version)
 # Check for and use version 5 of Berkeley Database
 DB_DEFAULT_OK != if grep -q "VERSION_MAJOR[[:space:]]\+[[:digit:]]" /usr/include/db.h; then echo 1; else echo 0; fi
 DB_EXPLICIT_DB5 != if v=$$( find /usr -name db.h 2>/dev/null | grep db5 ); then echo "$$v"; fi; [ 1 -eq 1 ]
@@ -60,7 +61,7 @@ preamble:
 	${PULL_C_PATTERNS}
 
 # Link from c_patterns
-${SRC}get_keypress.c:
+${SRC}/get_keypress.c:
 	@echo "Getting lastest c_patterns modules."
 	git clone http://www.github.com/cjungmann/c_patterns.git
 	cp -s ${PWD}/c_patterns/get_keypress.* src
@@ -107,14 +108,14 @@ files/gcide/CIDE.A:
 	mv gcide-0.52 files/gcide
 
 install:
-	install -D --mode=755 ${TARGET}        ${TH_HOME}
-	install -D --mode=744 -t ${DB_HOME}  ${DB_NAME}.*
-	echo -e "${ETC_CONTENT}" > "${ETC_TARGET}"
+	install -D --mode=755    ${TARGET}     ${TH_HOME}
+	install -D --mode=744 -t ${DB_HOME}    ${DB_NAME}.*
+	echo -e ${ETC_CONTENT} > ${ETC_TARGET}
 
 uninstall:
-	rm -f "/usr/local/bin/${TARGET}"
-	rm -f "${ETC_TARGET}"
-	rm -rf "${DB_HOME}"
+	rm -f  ${TH_HOME}/${TARGET}
+	rm -f  ${ETC_TARGET}
+	rm -rf ${DB_HOME}
 
 clean:
 	rm -f th
