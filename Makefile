@@ -108,8 +108,9 @@ files/gcide/CIDE.A:
 	mv gcide-0.52 files/gcide
 
 install:
-	install -D --mode=755    ${TARGET}     ${TH_HOME}
-	install -D --mode=744 -t ${DB_HOME}    ${DB_NAME}.*
+	install -d ${DB_HOME}
+	install -D --mode=744   ${DB_NAME}.*  ${DB_HOME}
+	install -D --mode=755   ${TARGET}     ${TH_HOME}
 	echo -e ${ETC_CONTENT} > ${ETC_TARGET}
 
 uninstall:
