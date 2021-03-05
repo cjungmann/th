@@ -1,0 +1,1 @@
+../../makefile_patterns/make_c_patterns.mk
