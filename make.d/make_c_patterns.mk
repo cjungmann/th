@@ -41,3 +41,4 @@ c_patterns:
 	@echo "Clone c_patterns project and link requested files to src directory."
 	git clone http://www.github.com/cjungmann/c_patterns.git
 
+Confirm_C_Patterns: ${CP_SOURCES}
