@@ -14,7 +14,7 @@ ETC_TARGET = /etc/th.conf
 
 MODULES != ls -1 ${SRC}/*.c | sed 's/\.c/.o/g'
 
-all: ${TARGET} ${DB_NAME}.db dict.db
+all: Confirm_DB5 ${TARGET} ${DB_NAME}.db dict.db
 	@echo "Making \"all\""
 
 CP_NAMES = get_keypress prompter columnize read_file_lines
