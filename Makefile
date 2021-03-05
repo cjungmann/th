@@ -22,7 +22,8 @@ include make.d/make_c_patterns.mk
 MODULES += ${CP_OBJECTS}
 
 include make.d/make_db5.mk
-include make.d/make_dict.mk
+CFLAGS += ${DB5_INC}
+LDLIBS != ${DB5_LIB}
 
 ${TARGET} : ${MODULES}
 	${CC} -o $@ $? ${LDFLAGS} ${LDLIBS}
