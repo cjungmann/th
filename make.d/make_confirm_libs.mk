@@ -1,1 +1,0 @@
-../../makefile_patterns/make_confirm_libs.mk
