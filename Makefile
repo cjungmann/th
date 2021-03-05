@@ -4,7 +4,7 @@ TARGET = th
 PREFIX ?= /usr/local
 CFLAGS = -Wall -Werror -std=c99 -pedantic -m64 -ggdb
 LDFLAGS =
-LDLIBS = -ldb -lreadargs
+LDLIBS = -lreadargs
 SRC = src
 
 # Set installation location variables
@@ -14,7 +14,7 @@ ETC_TARGET = /etc/th.conf
 
 MODULES != ls -1 ${SRC}/*.c | sed 's/\.c/.o/g'
 
-all: Confirm_DB5 ${TARGET} ${DB_NAME}.db dict.db
+all: Confirm_DB5 Confirm_C_Patterns ${TARGET} ${DB_NAME}.db dict.db
 	@echo "Making \"all\""
 
 CP_NAMES = get_keypress prompter columnize read_file_lines
@@ -23,7 +23,7 @@ MODULES += ${CP_OBJECTS}
 
 include make.d/make_db5.mk
 CFLAGS += ${DB5_INC}
-LDLIBS != ${DB5_LIB}
+LDLIBS += ${DB5_LIB}
 
 ${TARGET} : ${MODULES}
 	${CC} -o $@ $? ${LDFLAGS} ${LDLIBS}
