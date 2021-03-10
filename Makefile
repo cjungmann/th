@@ -17,7 +17,7 @@ MODULES != ls -1 ${SRC}/*.c | sed 's/\.c/.o/g'
 all: Confirm_DB5 Confirm_C_Patterns ${TARGET} ${DB_NAME}.db dict.db
 	@echo "Making \"all\""
 
-CP_NAMES = get_keypress prompter columnize read_file_lines
+CP_NAMES = get_keypress prompter columnize read_file_lines commaize
 include make.d/make_c_patterns.mk
 MODULES += ${CP_OBJECTS}
 

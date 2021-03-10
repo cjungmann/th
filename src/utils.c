@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "utils.h"
+#include "commaize.h"
 
 #include <readargs.h>      // access to main()'s argc for approximate start of stack
 #include <sys/resource.h>  // for getrlimit() in display_stack_report()
@@ -186,23 +187,6 @@ void display_stack_report(int level)
 }
 
 /**
- * Add commas to printout of integer values.
- */
-void commaize_number(unsigned long num)
-{
-   if (num > 0)
-   {
-      // recurse to reverse order
-      commaize_number(num / 1000);
-
-      if (num > 1000)
-         printf(",%03lu", num % 1000);
-      else
-         printf("%lu", num);
-   }
-}
-
-/**
  * Doesn't do much, (erase and reuse line), but it's easier
  * to find and use by making it a simple function.
  */
@@ -214,6 +198,7 @@ void reuse_terminal_line(void)
 #ifdef UTILS_MAIN
 
 #include <stdio.h>
+#include "commaize.c"
 
 void cs_user(const char *catstr, void *data)
 {
