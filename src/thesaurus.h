@@ -3,6 +3,7 @@
 
 #include "bdb.h"
 #include "wordc.h"
+#include "ivtable.h"
 
 extern const char *thesaurus_name;
 

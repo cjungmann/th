@@ -32,7 +32,7 @@ const PUnit main_menu_units[] = {
    { "&previous", CPR_PREVIOUS },
    { "&next",     CPR_NEXT },
    { "&last",     CPR_LAST },
-   { "&options",  PR_OPTIONS },
+   /* { "&options",  PR_OPTIONS }, */
    { "&quit",     CPR_QUIT }
 };
 const PMenu main_menu = { main_menu_units, ARRLEN(main_menu_units) };
@@ -98,6 +98,7 @@ void result_trec_user(const TREC **list, int length, void *closure)
    flow_function_f flower = display_newspaper_columns;
    const PMenu *curmenu = &main_menu;
 
+   // Default to alphabetic sorting
    resort_trec_list(&params, PR_ALPHABETIC);
 
    const void **ptr = PPARAMS_first(&params);

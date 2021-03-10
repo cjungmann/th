@@ -3,8 +3,9 @@
 #include <readargs.h>
 #include <limits.h>
 #include <assert.h>
+
 #define __USE_MISC
-#include <stdlib.h>  // for qsort (alloca in BSD?)
+#include <stdlib.h>  // for qsort, alloca unlocked with __USE_MISC for BSD
 /* #include <alloca.h> */
 
 #include "bdb.h"
@@ -211,140 +212,6 @@ int update_thesaurus_word_frequencies(void)
       return result;
 }
 
-/**
- * This "closure" contains all the variables needed by
- * the recursive function *word_list_recursor*.  Using
- * a pointer to an instance of this struct should minimize
- * the stack frame penalty of the deeply-recursuve function.
- */
-typedef struct recurse_closure {
-   TTABS          *ttabs;
-   IVTable        *ivt;
-   RecID          *list;
-   RecID          *ptr;
-   RecID          *lend;
-   const char     **wlist;
-   const char     **wptr;
-   int            len;
-   word_list_user user;
-   void           *closure;
-   DBT            *value;
-
-   // Work variables for use in word_list_recursor()
-   Result         result;
-   TREC           *trec;
-   size_t         word_size;
-   char           *buffer;
-} REc;
-
-/**
- * Using recursion and VLA instead of *alloca* to make a list
- * of related words.
- */
-void word_list_recursor(REc *rec)
-{
-   if (rec->ptr < rec->lend)
-   {
-      rec->result = rec->ivt->get_record_by_recid(rec->ivt, *rec->ptr, rec->value);
-
-      if (rec->result)
-         fprintf(stderr, "Failed to retrieve word number %u.\n", *rec->ptr);
-      else if (rec->value->size > 0)
-      {
-         rec->trec = (TREC*)rec->value->data;
-         rec->word_size = rec->value->size - sizeof(TREC);
-
-         // make copy of word
-         char buffer[rec->word_size + 1];
-         /* char *buffer = (char*)alloca(rec->word_size + 1); */
-         memcpy(buffer, rec->trec->value, rec->word_size);
-         buffer[rec->word_size] = '\0';
-
-         // Save word
-         *rec->wptr = buffer;
-
-         rec->buffer = buffer;
-
-         // (redundant but safe) clear closure of current stack's data:
-         /* rec->result = 0; */
-         /* rec->trec = NULL; */
-         /* rec->word_size = 0; */
-         /* rec->buffer = NULL; */
-
-         // Update word-list pointer only if a new word was stored:
-         rec->wptr++;
-         rec->ptr++;
-         word_list_recursor(rec);
-      }
-      else
-      {
-         rec->ptr++;
-         word_list_recursor(rec);
-      }
-   }
-   else
-   {
-      (*rec->user)(rec->wlist, rec->len, rec->closure);
-   }
-}
-
-/**
- * Initialize the data and launch the recursive word compilation function.
- */
-void build_word_list_recurse(TTABS *ttabs, RecID *list, int len, word_list_user user, void *closure)
-{
-   const char *wlist[len];
-   DBT value;
-   memset(&value, 0, sizeof(DBT));
-
-   // This struct serves all computation needs of word_list_recursor()
-   // in order to save stack space (only one parameter, no local variables).
-   REc  rec = { ttabs, &ttabs->ivt, list, list, list+len, wlist, wlist, len, user, closure, &value };
-
-   word_list_recursor(&rec);
-}
-
-/**
- * Related word-list collector, provides the list through
- * the callback function *user*.
- *
- * This function is much simpler than the recursion+VLA method,
- * and much more memory efficient, as comparison testing shows.
- */
-void build_word_list_alloca(TTABS *ttabs, RecID *list, int len, word_list_user user, void *closure)
-{
-   IVTable *ivt = &ttabs->ivt;
-
-   RecID *listend = list + len;
-
-   const char *wlist[len];
-   memset(wlist, 0, sizeof(wlist));
-   const char **wptr = wlist;
-
-   Result result;
-   DBT value;
-   memset(&value, 0, sizeof(DBT));
-
-   while (list < listend)
-   {
-      if ((result = ivt->get_record_by_recid(ivt, *list, &value)))
-         fprintf(stderr, "Failed to retrieve word number %u.\n", *list);
-      else if (value.size > 0)
-      {
-         TREC *trec = (TREC*)value.data;
-         int vsize = value.size - sizeof(TREC);
-         char *buff = (char*)alloca(vsize + 1);
-         memcpy(buff, trec->value, vsize);
-         buff[vsize] = '\0';
-         *wptr = buff;
-         ++wptr;
-      }
-
-      ++list;
-   }
-
-   (*user)(wlist, len, closure);
-}
 
 void build_trec_list_alloca(TTABS *ttabs, RecID *list, int len, trec_list_user user, void *closure)
 {
@@ -441,21 +308,6 @@ int trec_sort_g_freq(const void *left, const void *right)
    return rec_left->frank - rec_right->frank;
 }
 
-/* void show_trec_columns(const TREC **list, int length, void *closure) */
-/* { */
-/*    typedef int (*compf_t)(const void *left, const void *right); */
-
-/*    /\* compf_t compf = trec_sort_alpha; *\/ */
-/*    compf_t compf = trec_sort_t_freq; */
-/*    /\* compf_t compf = trec_sort_g_freq; *\/ */
-
-/*    qsort((void*)list, length, sizeof(TREC*), compf); */
-
-/*    columnize_pager(&ceif_trec, (const void**)list, length, closure); */
-/* } */
-
-
-
 int thesaurus_word_by_recid(int recid)
 {
    int retval = 1;
@@ -506,6 +358,10 @@ typedef struct enumerator_track {
    int   max_syns;
 } ET;
 
+/*
+ * This function, and the struct just above, is an implementation
+ * of a callback function that can be called 
+ */
 void enumerator_callback(TTABS *ttabs, RecID id, TREC *trec, int word_len, void *closure)
 {
    ET *et = (ET*)closure;
@@ -535,6 +391,10 @@ void enumerator_callback(TTABS *ttabs, RecID id, TREC *trec, int word_len, void 
    }
 }
 
+/*
+ * Use walk_entries() to evaluate each root word for related words count,
+ * reporting the word with the least and the word with most related words.
+ */
 int enumerate_words(void)
 {
    TTABS ttabs;
@@ -566,9 +426,10 @@ int enumerate_words(void)
       TTB.close(&ttabs);
    }
 
-   
    return 0;
 }
+
+
 
 raAction actions[] = {
    {'h', "help",
@@ -626,6 +487,8 @@ int main(int argc, const char **argv)
          return update_thesaurus_word_frequencies();
       else if (flag_enumerate)
          return enumerate_words();
+      else if (flag_stack_report)
+         run_stack_report("cut");
       else if (thesaurus_word)
          return show_thesaurus_word(thesaurus_word);
       else if (thesaurus_recid)

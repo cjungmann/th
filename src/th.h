@@ -4,6 +4,7 @@
 #include "bdb.h"
 #include "ivtable.h"
 #include "thesaurus.h"
+#include "columnize.h"
 
 
 struct stwc_closure {
@@ -40,6 +41,9 @@ void resort_trec_list(PPARAMS *params, int order);
 void result_trec_user(const TREC **list, int length, void *closure);
 void thesaurus_result_user(TTABS *ttabs, TRESULT *tresult, void *closure);
 int show_thesaurus_word(const char *word);
+
+// th_test.c
+void run_stack_report(const char *word);
 
 
 
