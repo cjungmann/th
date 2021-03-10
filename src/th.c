@@ -55,10 +55,8 @@ int import_thesaurus(void)
       Result result;
       TTABS ttabs;
 
-      const char *tname = thesaurus_name ? thesaurus_name : "thesaurus";
-      
       TTB.init(&ttabs);
-      if (!(result = TTB.open(&ttabs, tname, 1)))
+      if (!(result = TTB.open(&ttabs, thesaurus_name, 1)))
       {
          WCC wcc;
          memset(&wcc, 0, sizeof(WCC));
