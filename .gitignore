@@ -6,7 +6,9 @@ c_patterns
 README/*_original.*
 src/get_keypress.*
 src/columnize.*
+src/commaize.*
 src/prompter.*
+src/read_file_lines.*
 src/*.o
 src/bdb
 src/istringt
