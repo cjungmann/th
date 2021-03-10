@@ -98,6 +98,8 @@ void result_trec_user(const TREC **list, int length, void *closure)
    flow_function_f flower = display_newspaper_columns;
    const PMenu *curmenu = &main_menu;
 
+   resort_trec_list(&params, PR_ALPHABETIC);
+
    const void **ptr = PPARAMS_first(&params);
    const void **newptr;
    while (1)
