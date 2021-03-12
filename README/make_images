@@ -10,7 +10,7 @@ declare SCALE=75%
 open_issue()
 {
     local BASE=th_call
-    gnome-screenshot -wf "${BASE}_big.png" -d 1 &
+    gnome-screenshot -wf "big_${BASE}.png" -d 1 &
     local -a args=(
         --geometry=80x4
         --
@@ -18,7 +18,7 @@ open_issue()
         )
     gnome-terminal "${args[@]}" &
     sleep 2
-    convert -resize "${SCALE}" "${BASE}_big.png" "${BASE}.png"
+    convert -resize "${SCALE}" "big_${BASE}.png" "${BASE}.png"
 }
 
 # Look for the last "th" process, get the first element (the PID)
@@ -39,7 +39,7 @@ kill_th()
 open_th()
 {
     local BASE=th_example
-    gnome-screenshot -wf "${BASE}_big.png" -d 1 &
+    gnome-screenshot -wf "big_${BASE}.png" -d 1 &
     local -a args=(
         --geometry=80x25
         --
@@ -48,7 +48,7 @@ open_th()
 
     gnome-terminal "${args[@]}" &
     sleep 2
-    convert -resize "${SCALE}" "${BASE}_big.png" "${BASE}.png"
+    convert -resize "${SCALE}" "big_${BASE}.png" "${BASE}.png"
     kill_th
 }
 
