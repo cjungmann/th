@@ -1,0 +1,106 @@
+.\" See `man -P 'less -p [[:space:]]+Title\ line$' man-pages`
+.TH TH 1 "04 March 2021" "Version 0.1"
+.SH NAME
+th \- Console-based Thesaurus
+.\"
+.SH SYNOPSIS
+.B th
+.RI [ options "...] " word
+.\"
+.SH DESCRIPTION
+.PP
+This manual page documents the program
+.BR th .
+.B th
+is an easy and quick to use console-based thesaurus.
+.\"
+.SH OPTIONS
+.PP
+.TP
+.BR -h ", " --help
+Show available options
+.TP
+.BR -t ", " --thesaurus_word
+Display words and phrases related to the option's value.
+.PP
+IMPORTING options
+.br
+The following set of options are used to set up the thesaurus.
+.TP
+.BR -T ", " --import_thesaurus
+Reads the specified file name to populate the thesaurus entries.
+.TP
+.B --thesaurus_source
+Path to file from which the thesaurus data should be imported.  If not set
+here,
+.I files/mthesaur.txt
+will be used.
+.TP
+.B --thesaurus_name
+Filename to use as the base for the thesaurus databases.  If not
+set here,
+.I thesaurus
+will be used.  If you use a different thesaurus name, you'll have
+to specify the name to use it.
+.TP
+.BR -v ", " --verbose
+Verbose output for import.
+.PP
+DEBUGGING options
+.br
+This project started as a place to experiment with some programming
+techniques.  The following options were added to test different ideas.
+.TP
+.BR -e ", " --enumerate
+Count synonyms per entry.  Displays the words with the shortest and longest
+list of related words.  This option uses a iterative method for scanning
+every word in the database.
+.TP
+.BR -d ", " --thesaurus_dump
+Dump the contents of the thesaurus database.  This uses a different
+iterative method from enumerate, just for fun.  Invokes a function
+pointer for each record.
+.TP
+.BR -i ", " --id
+Display thesaurus word for the given id.  This is an old test of
+little value to the end user.  Invokes a function pointer for each
+record.
+.TP
+.BR -s ", " --stack_report
+Show stack report for word lists.  Internally, this option creates
+an in-memory collection of word records.  This uses a third iterative
+method where the information is pulled rather than pushed.  This option
+takes advantage of that to process a word twice, once using
+.I alloca
+in a loop, and a second time using a recursion and VLAs (variable-length array),
+reporting stack memory used and elapsed clock ticks to compare the
+methods.
+.\"
+.SH NOTES
+.PP
+If the application can find the requested word, it will fill the screen
+with columns of words and phrases related to the word.  At the bottom of
+the screen is a simple prompt:
+.PP
+.IP \(bu
+.BI f irst
+displays the first page of related words.
+.IP \(bu
+.BI p revious
+displays the page just before the current page.
+.IP \(bu
+.BI n ext
+displays the page just after the current page.
+.IP \(bu
+.BI l ast
+display the last page of related words.
+.IP \(bu
+.BI o ptions
+display alternate menus for other options.
+.IP \(bu
+.BI q uit
+leave the application.
+
+.IR f "irst / " p "revious / " n "ext / " l "ast / " o "ptions / " q uit
+.PP
+Corresponding to the first page
