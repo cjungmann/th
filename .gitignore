@@ -3,7 +3,7 @@ c_patterns
 *.k2r
 *.r2w
 *.w2r
-README/*_original.*
+README/big_*.png
 src/get_keypress.*
 src/columnize.*
 src/commaize.*
