@@ -13,6 +13,14 @@ to open and easy to scan.  It is not as well organized as [thesaurus.com],
 with synonym organized but find your perfect work in much less time
 using **th**.
 
+**NOTE:** This project started as a platform for experimenting with
+the Berkeley Database, various object-oriented ideas in C, portable
+*makefile* design, and an idea I have about using a collection of
+small C-language modules for resuable code.  There is some, shall I
+say, *awkwardness* in the code.  Despite all that, I find the thesaurus
+very useful, and it will work as advertised.  Look at the
+[Original Project Goals](#Original%20Project%20Goals) below.
+
 ## Usage
 
 With **th** built and installed, open a new console window, type
@@ -38,9 +46,11 @@ must be resolved before
 
 ### Dependencies
 
-1. **git** is used to download some dependencies.  While the project
-   can be built without **git**, it requires some undocumented knowledge
-   about the source files that using **make** avoids.
+1. **git** is used to download some dependencies.  While project
+   dependencies can be directly downloaded without **git**, doing
+   so requires undocumented knowledge about the source files, a
+   problem that is avoided when **make** can use **git** to download
+   the dependencies.
 
 1. [readargs][2] is one of my projects that processes command line
    arguments.  Please download/clone, build and install this library.
@@ -69,11 +79,17 @@ As expected, **make** will compile the **th** application.
 Unconventionally, perhaps, **make** performs other tasks that may
 take some time:
 
+1. Downloads my repository of C modules and uses several of them
+   by making links into the **src** directory.
+
+1. The **makefile** identifies and immediately terminates if it
+   detects missing dependencies.
+
 1. Download and import the public domain [moby thesaurus][4] from
    [The Gutenberg Project][5].  This populates the application's
    word database.
 
-2. Download and import a word count database.  The idea is to
+1. Download and import a word count database.  The idea is to
    offer alternate sorting orders to make it easier to find a word
    from a longer list.  This is not working right now.  I'm not
    sure I'll come back to this because I'm finding an alphapetic
@@ -93,7 +109,7 @@ with using the output.  We'll see.
 [5]: http://gutenberg.org/                    "Gutenberg Home Page"
 [6]: http://gutenberg.org/ebooks/3203         "Moby Part of Speech"
 
-## Personal Project Goals
+## Original Project Goals
 
 I had several objectives when I started this project.
 
