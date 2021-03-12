@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+#
+# Use this script to create png images for the README.md
+#
+
+TERM_PROMPT="\033[32;1muser\033[m@\033[38;2;255;128;128mhost\033[m$:~ th attention"
+declare SCALE=75%
+
+open_issue()
+{
+    local BASE=th_call
+    gnome-screenshot -wf "${BASE}_big.png" -d 1 &
+    local -a args=(
+        --geometry=80x4
+        --
+        ./make_images write_fake_prompt
+        )
+    gnome-terminal "${args[@]}" &
+    sleep 2
+    convert -resize "${SCALE}" "${BASE}_big.png" "${BASE}.png"
+}
+
+# Look for the last "th" process, get the first element (the PID)
+# and use the PID to kill the process.
+kill_th()
+{
+    local IFS=$'\n'
+    local -a th_procs=$( ps -A | grep [[:space:]]th$ )
+    local -i num_procs="${#th_procs[@]}"
+    if [ $num_procs -gt 0 ]; then
+        IFS=$' '
+        local -a pidparts=( ${th_procs[$num_procs-1]} )
+        local -i thpid="${pidparts[0]}"
+        kill $thpid
+    fi
+}
+
+open_th()
+{
+    local BASE=th_example
+    gnome-screenshot -wf "${BASE}_big.png" -d 1 &
+    local -a args=(
+        --geometry=80x25
+        --
+        th attention
+        )
+
+    gnome-terminal "${args[@]}" &
+    sleep 2
+    convert -resize "${SCALE}" "${BASE}_big.png" "${BASE}.png"
+    kill_th
+}
+
+write_fake_prompt()
+{
+    echo -ne "${TERM_PROMPT}"
+    read -t 2
+}
+
+if [ "$#" -eq 0 ]; then
+    open_issue
+    open_th
+elif [ "$1" == "write_fake_prompt" ]; then
+    write_fake_prompt
+fi
+
+
