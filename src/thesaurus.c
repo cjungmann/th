@@ -15,7 +15,7 @@
 #include <fcntl.h>     // for open()
 #include <errno.h>     // ENOENT return value
 
-const char *thesaurus_name = "thesaurus";
+const char *thesaurus_name = NULL;
 
 // "class" member functions, for TTABS_Class instance TTB
 void   ttabs_init_imp(TTABS *ttabs);

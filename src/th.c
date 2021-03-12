@@ -39,6 +39,11 @@ bool flag_verbose = 0;
 const char *path_thesaurus_source = "files/mthesaur.txt";
 const char *path_frequency_source = "files/count_1w.txt";
 
+const char *get_importing_thesaurus_name(void)
+{
+   return thesaurus_name ? thesaurus_name : "thesaurus";
+}
+
 /**
  * Fulfills command line option -i.
  *
@@ -53,10 +58,11 @@ int import_thesaurus(void)
    if (f)
    {
       Result result;
-      TTABS ttabs;
+      const char *tname = get_importing_thesaurus_name();
 
+      TTABS ttabs;
       TTB.init(&ttabs);
-      if (!(result = TTB.open(&ttabs, thesaurus_name, 1)))
+      if (!(result = TTB.open(&ttabs, tname, 1)))
       {
          WCC wcc;
          memset(&wcc, 0, sizeof(WCC));
@@ -90,9 +96,11 @@ int import_thesaurus(void)
 bool dump_thesaurus(void)
 {
    Result result;
+   const char *tname = get_importing_thesaurus_name();
+
    IVTable ivt;
    init_IVTable(&ivt);
-   if (!(result = ivt.open(&ivt, thesaurus_name, 0)))
+   if (!(result = ivt.open(&ivt, tname, 0)))
    {
       dump_table(&ivt.t_records, thesaurus_dumpster, NULL);
 
@@ -102,7 +110,7 @@ bool dump_thesaurus(void)
    else
    {
       DB *db = ivt.get_records_db(&ivt);
-      db->err(db, result, "Unable to open thesaurus \"%s\".", thesaurus_name);
+      db->err(db, result, "Unable to open thesaurus \"%s\".", tname);
    }
 
    return 1;
@@ -174,16 +182,15 @@ void UTWF_user(TTABS *ttabs, RecID id, TREC *trec, int word_len, void *closure)
 int update_thesaurus_word_frequencies(void)
 {
    Result result;
-
-   printf("Doin' a frequency update.\n");
+   const char *tname = get_importing_thesaurus_name();
 
    TTABS ttabs;
    memset(&ttabs, 0, sizeof(TTABS));
    TTB.init(&ttabs);
-   if ((result = TTB.open(&ttabs, thesaurus_name, 0)))
+   if ((result = TTB.open(&ttabs, tname, 0)))
    {
       fprintf(stderr, "Failed to open thesaurus database %s: %s.\n",
-              thesaurus_name,
+              tname,
               db_strerror(result));
       goto abandon_function;
    }
@@ -194,7 +201,7 @@ int update_thesaurus_word_frequencies(void)
    if ((result = wcc_open(&wcc, "wordc.db", 0)))
    {
       fprintf(stderr, "Failed to open word frequency databse %s: %s.\n",
-              thesaurus_name,
+              tname,
               db_strerror(result));
       goto abandon_ttabs;
    }
@@ -395,13 +402,14 @@ void enumerator_callback(TTABS *ttabs, RecID id, TREC *trec, int word_len, void 
  */
 int enumerate_words(void)
 {
-   TTABS ttabs;
    Result result;
+   const char *tname = thesaurus_name ? thesaurus_name : "thesaurus";
       
+   TTABS ttabs;
    TTB.init(&ttabs);
    if ((result = open_existing_thesaurus(&ttabs)))
    {
-      printf("enumerate_words error opening %s: %s.\n", thesaurus_name, db_strerror(result));
+      printf("enumerate_words error opening %s: %s.\n", tname, db_strerror(result));
       return 0;
    }
    else
