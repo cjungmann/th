@@ -4,7 +4,7 @@ TARGET = th
 PREFIX ?= /usr/local
 CFLAGS = -Wall -Werror -std=c99 -pedantic -m64 -ggdb
 LDFLAGS =
-LDLIBS = -lreadargs
+LDLIBS = -lreadargs -ldb
 SRC = src
 
 # Set installation location variables
@@ -14,8 +14,9 @@ ETC_TARGET = /etc/th.conf
 
 MODULES != ls -1 ${SRC}/*.c | sed 's/\.c/.o/g'
 
-all: Confirm_DB5 Confirm_C_Patterns ${TARGET} ${DB_NAME}.db dict.db
-	@echo "Making \"all\""
+# Default rule:
+all: Confirm_DB5 CP_PREPARE_SOURCES ${TARGET} ${DB_NAME}.db
+	@echo Finished generating ${TARGET}
 
 CP_NAMES = get_keypress prompter columnize read_file_lines commaize
 include make.d/make_c_patterns.mk
@@ -49,7 +50,8 @@ clean:
 full_clean:
 	rm -f ${TARGET}
 	rm -rf ${SRC}/*.o
-	rm -rf ${CP_SOURCES} ${CP_HEADERS}
+	rm -rf ${CP_SOURCES}
+	rm -rf ${CP_HEADERS}
 
 ${DB_NAME}.db: files/mthesaur.txt
 	@echo "Importing Moby Thesaurus"
