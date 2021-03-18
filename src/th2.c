@@ -23,6 +23,8 @@ enum poptions {
    PR_ALPHABETIC,
    PR_GOOGLE_F,
    PR_THESAURUS_F,
+   PR_BRANCHES,
+   PR_TRUNKS,
    PR_RETURN
 };
 
@@ -36,6 +38,26 @@ const PUnit main_menu_units[] = {
    { "&quit",     CPR_QUIT }
 };
 const PMenu main_menu = { main_menu_units, ARRLEN(main_menu_units) };
+
+const PUnit trunks_menu_units[] = {
+   { "&first",    CPR_FIRST },
+   { "&previous", CPR_PREVIOUS },
+   { "&next",     CPR_NEXT },
+   { "&last",     CPR_LAST },
+   { "&branches", PR_BRANCHES },
+   { "&quit",     CPR_QUIT }
+};
+const PMenu trunks_menu = { trunks_menu_units, ARRLEN(trunks_menu_units) };
+
+const PUnit branches_menu_units[] = {
+   { "&first",    CPR_FIRST },
+   { "&previous", CPR_PREVIOUS },
+   { "&next",     CPR_NEXT },
+   { "&last",     CPR_LAST },
+   { "&trunks",   PR_TRUNKS },
+   { "&quit",     CPR_QUIT }
+};
+const PMenu branches_menu = { branches_menu_units, ARRLEN(branches_menu_units) };
 
 const PUnit options_menu_units[] = {
    { "&flow",    PR_FLOW_MENU },
@@ -62,7 +84,7 @@ const PUnit sort_menu_units[] = {
 };
 const PMenu sort_menu = { sort_menu_units, ARRLEN(sort_menu_units) };
 
-void resort_trec_list(PPARAMS *params, int order)
+void resort_trec_list(void* recs, int count, int order)
 {
    int (*sorter)(const void *left, const void *right) = NULL;
    switch(order)
@@ -77,36 +99,80 @@ void resort_trec_list(PPARAMS *params, int order)
          sorter = trec_sort_t_freq;
          break;
    }
-   void *list = (void*)params->start;
-   int length = params->end - params->start;
-   qsort(list, length, sizeof(TREC*),  sorter);
+   qsort(recs, count, sizeof(TREC*),  sorter);
 }
 
-void result_trec_user(const TREC **list, int length, void *closure)
+void resort_params(PPARAMS *params, int order)
+{
+   resort_trec_list(params->start,
+                    params->end - params->start,
+                    order);
+}
+
+void thesaurus_result_user(TTABS *ttabs, TRESULT *tresult, void *closure)
 {
    struct stwc_closure *stwc = (struct stwc_closure*)closure;
 
-   int maxlen = columnize_get_max_len(&ceif_trec, (const void **)list, (const void**)list+length);
-   PPARAMS params;
-   PPARAMS_init(&params,
-                (const void **)list, length,
-                2,       // gutter size
-                4,       // reserve lines (one at top, three below for prompt/menu)
-                maxlen);
-   PPARAMS_query_screen(&params);
+   // Alphabetize lists outside of loop:
+   resort_trec_list(tresult->entries,
+                    tresult->entries_count,
+                    PR_ALPHABETIC);
+   
+   resort_trec_list(tresult->roots,
+                    tresult->roots_count,
+                    PR_ALPHABETIC);
 
+
+   // No longer supporting flow change.
    flow_function_f flower = display_newspaper_columns;
-   const PMenu *curmenu = &main_menu;
 
-   // Default to alphabetic sorting
-   resort_trec_list(&params, PR_ALPHABETIC);
+   enum display_modes { DM_SAME, DM_BRANCHES, DM_TRUNKS };
+   bool display_mode = DM_BRANCHES;
 
-   const void **ptr = PPARAMS_first(&params);
+   // display_mode-dependent variables
+   PPARAMS params;
+   const TREC **list;
+   int list_len;
+   const PMenu *curmenu = NULL;
+
+   // page-dependent variables
+   const void **ptr;
    const void **newptr;
+
    while (1)
    {
-      curmenu = &main_menu;
+      if (display_mode != DM_SAME)
+      {
+         if (display_mode == DM_BRANCHES)
+         {
+            list = (const TREC**)&tresult->entries;
+            list_len = tresult->entries_count;
+            curmenu = &branches_menu;
+         }
+         else if (display_mode == DM_TRUNKS)
+         {
+            list = (const TREC**)&tresult->roots;
+            list_len =  tresult->roots_count;
+            curmenu = &trunks_menu;
+         }
 
+         // Calculate columns and lines to display base on screen dimensions,
+         // max string length, and lines to reserve for legend stuff:
+         ptr = PPARAMS_first(&params);
+
+         int maxlen = columnize_get_max_len(&ceif_trec,
+                                            (const void **)list,
+                                            (const void**)list + list_len);
+
+         PPARAMS_init(&params,
+                      (const void **)list, list_len,
+                      2,       // gutter size
+                      4,       // reserve lines (one at top, three below for prompt/menu)
+                      maxlen);
+         PPARAMS_query_screen(&params);
+      }
+
+      
       prompter_reuse_line();
       printf(" - - - - - Synonyms for \x1b[33;1m%s\x1b[m - - - - -\n", stwc->word);
       const void **stop = (*flower)(&ceif_trec,
@@ -157,6 +223,13 @@ void result_trec_user(const TREC **list, int length, void *closure)
             curmenu = &main_menu;
             goto recheck_user_response;
 
+         case PR_BRANCHES:
+            display_mode = DM_BRANCHES;
+            break;
+         case PR_TRUNKS:
+            display_mode = DM_TRUNKS;
+            break;
+
             /* Flow menu actions */
          case PR_NEWSPAPER:
             flower = display_newspaper_columns;
@@ -171,7 +244,7 @@ void result_trec_user(const TREC **list, int length, void *closure)
          case PR_ALPHABETIC:
          case PR_GOOGLE_F:
          case PR_THESAURUS_F:
-            resort_trec_list(&params, result);
+            resort_params(&params, result);
             ptr = PPARAMS_move(&params, CPR_FIRST);
             break;
       }
@@ -180,16 +253,6 @@ void result_trec_user(const TREC **list, int length, void *closure)
   exit_function:
    prompter_reuse_line();
 }
-
-void thesaurus_result_user(TTABS *ttabs, TRESULT *tresult, void *closure)
-{
-   build_trec_list_alloca(ttabs,
-                          tresult->entries,
-                          tresult->entries_count,
-                          result_trec_user,
-                          closure);
-}
-
 
 int show_thesaurus_word(const char *word)
 {

@@ -37,7 +37,8 @@ int trec_sort_g_freq(const void *left, const void *right);  // by google frequen
 
 
 // th2.c
-void resort_trec_list(PPARAMS *params, int order);
+void resort_trec_list(void* recs, int count, int order);
+void resort_params(PPARAMS *params, int order);
 void result_trec_user(const TREC **list, int length, void *closure);
 void thesaurus_result_user(TTABS *ttabs, TRESULT *tresult, void *closure);
 int show_thesaurus_word(const char *word);
