@@ -4,6 +4,9 @@
 #include "thesaurus.h"
 #include "rrtable.h"
 
+#define __USE_MISC
+#include <stdlib.h>  // for qsort, alloca unlocked with __USE_MISC for BSD
+
 #include <string.h>    // for memset()
 
 #include <sys/types.h> // for stat()
@@ -26,6 +29,7 @@ Result ttabs_get_word_rec_imp(TTABS *ttabs, RecID id, TREC *buffer, DataSize siz
 RecID  ttabs_lookup_imp(TTABS *ttabs, const char *str);
 Result ttabs_get_words_imp(DB *db, TTABS *ttabs, RecID id, recid_list_user user, void *closure);
 Result ttabs_get_result_imp (TTABS *ttabs, RecID id, tresult_user user, void *closure);
+Result ttabs_get_twresult_imp(TTABS *ttabs, RecID id, twresult_user user, void *closure);
 Result ttabs_walk_entries_imp(TTABS *ttabs, tword_user user, void *closure);
 int ttabs_count_synonyms_imp(TTABS *ttabs, RecID id);
 DataSize ttabs_word_rank_imp(TTABS *ttabs, const char *word, int size);
@@ -44,6 +48,7 @@ TTABS_Class TTB = {
    ttabs_lookup_imp,
    ttabs_get_words_imp,
    ttabs_get_result_imp,
+   ttabs_get_twresult_imp,
    ttabs_walk_entries_imp,
    ttabs_count_synonyms_imp,
    ttabs_word_rank_imp
@@ -360,6 +365,71 @@ Result ttabs_get_result_imp(TTABS *ttabs, RecID id, tresult_user user, void *clo
                               &rclosure);
 }
 
+
+typedef struct get_twresult_closure {
+   RecID         id;
+   twresult_user user;
+   void          *closure;
+   TTABS         *ttabs;
+   TWRESULT      *twresult;
+} TWR_Closure;
+
+
+
+void ttabs_get_root_trecs(const TREC **list, int length, void *closure)
+{
+   TWR_Closure *twr_closure = (TWR_Closure*)closure;
+   twr_closure->twresult->roots = list;
+   twr_closure->twresult->roots_count = length;
+
+   (*twr_closure->user)(twr_closure->ttabs, twr_closure->twresult, twr_closure->closure);
+}
+
+void ttabs_get_root_recids(TTABS *ttabs, RecID *list, int len, void *closure)
+{
+   build_trec_list_alloca(ttabs, list, len, ttabs_get_root_trecs, closure);
+}
+
+void ttabs_get_entry_trecs(const TREC **list, int length, void *closure)
+{
+   TWR_Closure *twr_closure = (TWR_Closure*)closure;
+   twr_closure->twresult->entries = list;
+   twr_closure->twresult->entries_count = length;
+
+   // Using word-to-root (w2r) index to
+   // get roots that include this word
+   ttabs_get_words_imp(twr_closure->ttabs->db_w2r,
+                       twr_closure->ttabs,
+                       twr_closure->id,
+                       ttabs_get_root_recids,
+                       closure);
+}
+
+void ttabs_get_entry_recids(TTABS *ttabs, RecID *list, int len, void *closure)
+{
+   build_trec_list_alloca(ttabs, list, len, ttabs_get_entry_trecs, closure);
+}
+
+Result ttabs_get_twresult_imp(TTABS *ttabs, RecID id, twresult_user user, void *closure)
+{
+   TWRESULT twresult;
+   memset(&twresult, 0, sizeof(twresult));
+   TWR_Closure twr_closure = { id, user, closure, ttabs, &twresult };
+
+   // Using root-to-word (r2w) index to
+   // get words with this word as root.
+   return ttabs_get_words_imp(ttabs->db_r2w,
+                              ttabs,
+                              id,
+                              ttabs_get_entry_recids,
+                              &twr_closure);
+}
+
+
+
+
+
+
 /**
  * For each word record in the table, this function will call
  * the *user* function with the record and the *closure*.
@@ -540,6 +610,40 @@ bool thesaurus_dumpster(DBT *key, DBT *value, void *data)
           word_size, trec->value);
    return 1;
 }
+
+void build_trec_list_alloca(TTABS *ttabs, RecID *list, int len, trec_list_user user, void *closure)
+{
+   IVTable *ivt = &ttabs->ivt;
+
+   RecID *listend = list + len;
+
+   const TREC *tlist[len];
+   memset(tlist, 0, sizeof(tlist));
+   const TREC **tptr = tlist;
+
+   Result result;
+   DBT value;
+   memset(&value, 0, sizeof(DBT));
+
+   while (list < listend)
+   {
+      if ((result = ivt->get_record_by_recid(ivt, *list, &value)))
+         fprintf(stderr, "Failed to retrieve word number %u.\n", *list);
+      else if (value.size > 0)
+      {
+         TREC *trec = (TREC*)alloca(value.size);
+         memcpy(trec, value.data, value.size);
+
+         *tptr = trec;
+         ++tptr;
+      }
+
+      ++list;
+   }
+
+   (*user)(tlist, len, closure);
+}
+
 
 /**
  * This function tries to find the best version of the

@@ -13,13 +13,12 @@ struct stwc_closure {
    RecID      id;
 };
 
+
+
 /**
  * Function pointer types for callbacks
  */
 typedef void (*word_list_user)(const char **list, int length, void *closure);
-typedef void (*trec_list_user)(const TREC **list, int length, void *closure);
-
-void build_trec_list_alloca(TTABS *ttabs, RecID *list, int len, trec_list_user user, void *closure);
 
 
 // Columnize needs a CEIF instance for formatting and printing,
@@ -41,6 +40,7 @@ void resort_trec_list(void* recs, int count, int order);
 void resort_params(PPARAMS *params, int order);
 void result_trec_user(const TREC **list, int length, void *closure);
 void thesaurus_result_user(TTABS *ttabs, TRESULT *tresult, void *closure);
+void thesaurus_twresult_user(TTABS *ttabs, TWRESULT *twresult, void *closure);
 int show_thesaurus_word(const char *word);
 
 // th_test.c

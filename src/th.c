@@ -218,40 +218,6 @@ int update_thesaurus_word_frequencies(void)
 }
 
 
-void build_trec_list_alloca(TTABS *ttabs, RecID *list, int len, trec_list_user user, void *closure)
-{
-   IVTable *ivt = &ttabs->ivt;
-
-   RecID *listend = list + len;
-
-   const TREC *tlist[len];
-   memset(tlist, 0, sizeof(tlist));
-   const TREC **tptr = tlist;
-
-   Result result;
-   DBT value;
-   memset(&value, 0, sizeof(DBT));
-
-   while (list < listend)
-   {
-      if ((result = ivt->get_record_by_recid(ivt, *list, &value)))
-         fprintf(stderr, "Failed to retrieve word number %u.\n", *list);
-      else if (value.size > 0)
-      {
-         TREC *trec = (TREC*)alloca(value.size);
-         memcpy(trec, value.data, value.size);
-
-         *tptr = trec;
-         ++tptr;
-      }
-
-      ++list;
-   }
-
-   (*user)(tlist, len, closure);
-}
-
-
 int trec_get_len(const void *el)
 {
    const TREC *rec = (const TREC *)el;

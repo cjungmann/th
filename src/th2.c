@@ -109,17 +109,18 @@ void resort_params(PPARAMS *params, int order)
                     order);
 }
 
-void thesaurus_result_user(TTABS *ttabs, TRESULT *tresult, void *closure)
+void thesaurus_twresult_user(TTABS *ttabs, TWRESULT *twresult, void *closure)
+/* void thesaurus_result_user(TTABS *ttabs, TRESULT *tresult, void *closure) */
 {
    struct stwc_closure *stwc = (struct stwc_closure*)closure;
 
    // Alphabetize lists outside of loop:
-   resort_trec_list(tresult->entries,
-                    tresult->entries_count,
+   resort_trec_list(twresult->entries,
+                    twresult->entries_count,
                     PR_ALPHABETIC);
    
-   resort_trec_list(tresult->roots,
-                    tresult->roots_count,
+   resort_trec_list(twresult->roots,
+                    twresult->roots_count,
                     PR_ALPHABETIC);
 
 
@@ -145,21 +146,21 @@ void thesaurus_result_user(TTABS *ttabs, TRESULT *tresult, void *closure)
       {
          if (display_mode == DM_BRANCHES)
          {
-            list = (const TREC**)&tresult->entries;
-            list_len = tresult->entries_count;
+            list = (const TREC**)twresult->entries;
+            list_len = twresult->entries_count;
             curmenu = &branches_menu;
          }
          else if (display_mode == DM_TRUNKS)
          {
-            list = (const TREC**)&tresult->roots;
-            list_len =  tresult->roots_count;
+            list = (const TREC**)twresult->roots;
+            list_len =  twresult->roots_count;
             curmenu = &trunks_menu;
          }
 
+         display_mode = DM_SAME;
+
          // Calculate columns and lines to display base on screen dimensions,
          // max string length, and lines to reserve for legend stuff:
-         ptr = PPARAMS_first(&params);
-
          int maxlen = columnize_get_max_len(&ceif_trec,
                                             (const void **)list,
                                             (const void**)list + list_len);
@@ -170,6 +171,8 @@ void thesaurus_result_user(TTABS *ttabs, TRESULT *tresult, void *closure)
                       4,       // reserve lines (one at top, three below for prompt/menu)
                       maxlen);
          PPARAMS_query_screen(&params);
+
+         ptr = PPARAMS_first(&params);
       }
 
       
@@ -269,7 +272,7 @@ int show_thesaurus_word(const char *word)
       if (id)
       {
          struct stwc_closure closure = { &ttabs, word, id };
-         TTB.get_result(&ttabs, id, thesaurus_result_user, &closure);
+         TTB.get_twresult(&ttabs, id, thesaurus_twresult_user, &closure);
       }
       else
          fprintf(stderr, "Failed to find \"%s\" in the thesaurus.\n", word);
