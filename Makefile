@@ -22,12 +22,15 @@ CP_NAMES = get_keypress prompter columnize read_file_lines commaize
 include make.d/make_c_patterns.mk
 MODULES += ${CP_OBJECTS}
 
+# Remove duplicates:
+MODULES != echo ${MODULES} | xargs -n1 | sort -u | xargs
+
 include make.d/make_db5.mk
 CFLAGS += ${DB5_INC}
 LDLIBS += ${DB5_LINK}
 
 ${TARGET} : ${MODULES}
-	${CC} -o $@ $? ${LDFLAGS} ${LDLIBS}
+	${CC} -o $@ ${MODULES} ${LDFLAGS} ${LDLIBS}
 
 %.o: %.c
 	${CC} ${CFLAGS} -c -o $@ $<
