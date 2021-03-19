@@ -4,7 +4,7 @@ TARGET = th
 PREFIX ?= /usr/local
 CFLAGS = -Wall -Werror -std=c99 -pedantic -m64 -ggdb
 LDFLAGS =
-LDLIBS = -lreadargs -ldb
+LDLIBS = -lreadargs
 SRC = src
 
 # Set installation location variables
@@ -24,7 +24,7 @@ MODULES += ${CP_OBJECTS}
 
 include make.d/make_db5.mk
 CFLAGS += ${DB5_INC}
-LDLIBS += ${DB5_LIB}
+LDLIBS += ${DB5_LINK}
 
 ${TARGET} : ${MODULES}
 	${CC} -o $@ $? ${LDFLAGS} ${LDLIBS}
