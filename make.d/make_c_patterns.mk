@@ -41,13 +41,12 @@ CP_LINKS_REGEX != echo ${CP_NAMES} | sed -E 's/([^[:space:]]+)/\1.o/g' | sed -E 
 CP_LINKS_FOUND != ls -1 ${SRC} | grep -E \(${CP_LINKS_REGEX}\)
 CP_NAMES_COUNT != echo ${CP_NAMES} | wc -w
 CP_SOURCES_COUNT != ls -1 ${CP_OBJECTS} 2>/dev/null | wc -l
-CP_SOURCE_LINKS_NEEDED != n=${CP_NAMES_COUNT}; s=${CP_SOURCES_COUNT}; \
-	if [ $$n -gt $$s ]; then echo 1; else echo 0; fi;
+CP_SOURCE_LINKS_NEEDED != if [ ${CP_NAMES_COUNT} -gt ${CP_SOURCES_COUNT} ]; then echo 1; else echo 0; fi;
 
 # This variable will contain a list of names for making links
 # if the links are not detected.  If not empty, it will be a
 # list of artificial prerequisite that will trigger the links.
-CP_LINK_PREREQS != t=${CP_SOURCE_LINKS_NEEDED}; if [ $$t -eq 1 ]; then echo ${CP_NAMES}; fi; [ 1 -eq 1 ]
+CP_LINK_PREREQS != if [ ${CP_SOURCE_LINKS_NEEDED} -eq 1 ]; then echo ${CP_NAMES}; fi; [ 1 -eq 1 ]
 
 # Initiate the link-making
 CP_PREPARE_SOURCES: ${CP_LINK_PREREQS}
