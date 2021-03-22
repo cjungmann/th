@@ -38,10 +38,10 @@ CP_OBJECTS != echo ${CP_SOURCES} | sed -E 's/\.c/\.o/g'
 
 # Detect if links must be established:
 CP_LINKS_REGEX != echo ${CP_NAMES} | sed -E 's/([^[:space:]]+)/\1.o/g' | sed -E 's/[[:space:]]+/\\|/g'
-CP_LINKS_FOUND != ls -1 ${SRC} | grep -E \(${CP_LINKS_REGEX}\)
+CP_LINKS_FOUND != ls -1 ${SRC} | grep -E \(${CP_LINKS_REGEX}\); [ 1 -eq 1 ]
 CP_NAMES_COUNT != echo ${CP_NAMES} | wc -w
 CP_SOURCES_COUNT != ls -1 ${CP_OBJECTS} 2>/dev/null | wc -l
-CP_SOURCE_LINKS_NEEDED != if [ ${CP_NAMES_COUNT} -gt ${CP_SOURCES_COUNT} ]; then echo 1; else echo 0; fi;
+CP_SOURCE_LINKS_NEEDED !=if [ ${CP_NAMES_COUNT} -gt ${CP_SOURCES_COUNT} ]; then echo 1; else echo 0; fi;
 
 # This variable will contain a list of names for making links
 # if the links are not detected.  If not empty, it will be a
@@ -53,8 +53,8 @@ CP_PREPARE_SOURCES: ${CP_LINK_PREREQS}
 
 ${CP_NAMES}: c_patterns
 	@echo Making link from c_patterns to $@
-	ln -fs ${PWD}/c_patterns/$@.c ${PWD}/${SRC}/$@.c
-	ln -fs ${PWD}/c_patterns/$@.h ${PWD}/${SRC}/$@.h
+	@ln -fs ${PWD}/c_patterns/$@.c ${PWD}/${SRC}/$@.c
+	@ln -fs ${PWD}/c_patterns/$@.h ${PWD}/${SRC}/$@.h
 
 pull_c_patterns: c_patterns
 	git -C c_patterns pull origin

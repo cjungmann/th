@@ -38,8 +38,11 @@ DB5_NEEDED != d=${DB_IS_DB5}; d5=${DB5_USE_ALTERNATIVE}; if [ $$d -eq 0 ] && [ $
 
 DB5_MESSAGE != d=${DB5_NEEDED}; if [ $$d -eq 1 ]; then echo "@echo \\\"Use your package manager to install version 5 of the Berkeley Database.\\\"; exit 1"; else echo "@echo Appropriate version of Berkeley Database found."; fi; [ 1 -eq 1 ]
 
-DB5_INC != d=${DB_IS_DB5}; dp=${DB5_ALTERNATIVE_PATH}; if [ $$d -eq 0 ] && [ $$dp ]; then echo "-I$$dp"; fi; [ 1 -eq 1 ]
-DB5_LINK = -ldb
+DB5_INC != d=${DB_IS_DB5}; dp=${DB5_ALTERNATIVE_PATH}; if [ $$d -eq 0 ] && [ $$dp ]; then echo "-I$$dp"; fi;
+
+DB5_ALTERNATIVE_LIB != find /usr -name libdb.so 2>/dev/null | grep "lib/db5"; [ 1 -eq 1 ]
+DB5_LINK != du=${DB5_USE_ALTERNATIVE}; dal=${DB5_ALTERNATIVE_LIB}; if [ $$du -eq 1 ] && [ "$$dal" ]; then echo "-L$${dal%/*}"; fi;
+DB5_LINK += -ldb
 
 
 Confirm_DB5:
