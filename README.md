@@ -55,6 +55,18 @@ the list of *trunk* words that contain the target word.  Typing
 
 ## Building th
 
+### Quick-start
+
+There are three steps, download, `make`, and `make install`.
+
+~~~sh
+git https://www.github.com/cjungmann/th.git
+cd th
+make
+sudo make install
+~~~
+
+
 The project is easy to build, but there are some dependencies that
 must be resolved before 
 
@@ -106,8 +118,11 @@ take some time:
 1. Download and import a word count database.  The idea is to
    offer alternate sorting orders to make it easier to find a word
    from a longer list.  This is not working right now.  I'm not
-   sure I'll come back to this because I'm finding an alphapetic
-   order is far easier to use.
+   sure I'll come back to this because I'm finding the benefit of
+   reading an alphapetic list far outweighs the dubious benefit
+   of trying to put more commonly-used words first.  The reason is
+   that it's much easier to keep track of words in consideration
+   when they are not randomly scattered in a long list of words.
 
 ## Future Possibilities
 
