@@ -110,7 +110,6 @@ void resort_params(PPARAMS *params, int order)
 }
 
 void thesaurus_twresult_user(TTABS *ttabs, TWRESULT *twresult, void *closure)
-/* void thesaurus_result_user(TTABS *ttabs, TRESULT *tresult, void *closure) */
 {
    struct stwc_closure *stwc = (struct stwc_closure*)closure;
 
@@ -135,6 +134,7 @@ void thesaurus_twresult_user(TTABS *ttabs, TWRESULT *twresult, void *closure)
    const TREC **list;
    int list_len;
    const PMenu *curmenu = NULL;
+   const char *context;
 
    // page-dependent variables
    const void **ptr;
@@ -149,12 +149,14 @@ void thesaurus_twresult_user(TTABS *ttabs, TWRESULT *twresult, void *closure)
             list = (const TREC**)twresult->entries;
             list_len = twresult->entries_count;
             curmenu = &branches_menu;
+            context = "Branches of root word";
          }
          else if (display_mode == DM_TRUNKS)
          {
             list = (const TREC**)twresult->roots;
             list_len =  twresult->roots_count;
             curmenu = &trunks_menu;
+            context = "Root words containing branch";
          }
 
          display_mode = DM_SAME;
@@ -177,7 +179,7 @@ void thesaurus_twresult_user(TTABS *ttabs, TWRESULT *twresult, void *closure)
 
       
       prompter_reuse_line();
-      printf(" - - - - - Synonyms for \x1b[33;1m%s\x1b[m - - - - -\n", stwc->word);
+      printf(" - - - - - %s \x1b[33;1m%s\x1b[m - - - - -\n", context, stwc->word);
       const void **stop = (*flower)(&ceif_trec,
                                     ptr,
                                     params.end,
@@ -185,7 +187,7 @@ void thesaurus_twresult_user(TTABS *ttabs, TWRESULT *twresult, void *closure)
                                     params.columns_to_show,
                                     params.lines_to_show);
 
-      printf("Synonyms for \x1b[33;1m%s\x1b[m: ", stwc->word);
+      printf("%s \x1b[33;1m%s\x1b[m: ", context, stwc->word);
       columnize_print_progress_line(&params, stop);
 
      recheck_user_response:
