@@ -52,6 +52,23 @@ open_th()
     kill_th
 }
 
+open_roots()
+{
+    local BASE=th_example_root
+    gnome-screenshot -wf "big_${BASE}.png" -d 1 &
+    local -a args=(
+        --geometry=80x25
+        --
+        th -r attention
+        )
+
+    gnome-terminal "${args[@]}" &
+    sleep 2
+    convert -resize "${SCALE}" "big_${BASE}.png" "${BASE}.png"
+    kill_th
+}
+
+
 write_fake_prompt()
 {
     echo -ne "${TERM_PROMPT}"
@@ -61,6 +78,7 @@ write_fake_prompt()
 if [ "$#" -eq 0 ]; then
     open_issue
     open_th
+    open_roots
 elif [ "$1" == "write_fake_prompt" ]; then
     write_fake_prompt
 fi
