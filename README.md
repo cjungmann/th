@@ -13,6 +13,13 @@ to open and easy to scan.  It is not as well organized as [thesaurus.com],
 with synonym organized but find your perfect work in much less time
 using **th**.
 
+The words and relations in this thesaurus are taken from a public-domain
+[moby thesaurus][4].  The source consists of lines of related words,
+the first word in each line is the root or *branch* word, and the
+remaining words on the line are related *branch* words.  This thesaurus
+allows you to switch between showing a list of *branch* words of the
+requested word, or a list of *root* words that contain the requested word.
+
 **NOTE:** This project started as a platform for experimenting with
 the Berkeley Database, various object-oriented ideas in C, portable
 *makefile* design, and an idea I have about using a collection of
@@ -38,6 +45,13 @@ Use an option by clicking the key corresponding to the highlighted
 character of the option.  For example, click `n` to go to the next
 page, `p` to go back one page.  Respecting *nix convention, typing
 `q` quits the program, leaving the current set of words on screen.
+Type `t` to switch to the *trunks* display as noted above.
+
+![Branches screen](README/th_example_root.png)
+
+If the user triggers the `branches` mode, the program will display
+the list of *trunk* words that contain the target word.  Typing
+`b` will restore the original *branches* display.
 
 ## Building th
 
