@@ -291,7 +291,7 @@ bool get_words_callback(DBT *key, DBT *value, void *closure)
 
 Result ttabs_get_words_imp(DB *db, TTABS *ttabs, RecID id, recid_list_user user, void *closure)
 {
-   GWC gwc = { id, user, closure };
+   GWC gwc = { id, user, closure, 0, NULL };
 
    DBC *cursor;
    Result result;
@@ -312,6 +312,8 @@ Result ttabs_get_words_imp(DB *db, TTABS *ttabs, RecID id, recid_list_user user,
          run_cursor_with_closure(cursor, &key, get_words_callback, &gwc);
          (*user)(ttabs, idlist, gwc.count, closure);
       }
+      else
+         (*user)(ttabs, NULL, 0, closure);
 
       cursor->close(cursor);
    }
