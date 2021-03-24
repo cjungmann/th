@@ -127,7 +127,7 @@ void thesaurus_twresult_user(TTABS *ttabs, TWRESULT *twresult, void *closure)
    flow_function_f flower = display_newspaper_columns;
 
    enum display_modes { DM_SAME, DM_BRANCHES, DM_TRUNKS };
-   bool display_mode = DM_BRANCHES;
+   bool display_mode = flag_roots_start ? DM_TRUNKS : DM_BRANCHES;
 
    // display_mode-dependent variables
    PPARAMS params;

@@ -35,6 +35,7 @@ bool flag_update_freq = 0;
 bool flag_stack_report = 0;
 bool flag_enumerate = 0;
 bool flag_verbose = 0;
+bool flag_roots_start = 0;
 
 const char *path_thesaurus_source = "files/mthesaur.txt";
 const char *path_frequency_source = "files/count_1w.txt";
@@ -412,27 +413,30 @@ raAction actions[] = {
    {'t', "thesaurus_word",
     "Word to be sought in thesaurus", &ra_string_agent, &thesaurus_word },
 
+   {'r', "root_start",
+    "Display roots of word first", &ra_flag_agent, &flag_roots_start },
+
    {'T', "import_thesaurus",
-    "Import thesaurus contents", &ra_flag_agent, &flag_import_thesaurus },
+    "SETUP: Import thesaurus contents", &ra_flag_agent, &flag_import_thesaurus },
 
    { 0, "thesaurus_name",
-     "Change base name of thesaurus database (import and usage)", &ra_string_agent, &thesaurus_name },
+     "SETUP: Change base name of thesaurus database (import and usage)", &ra_string_agent, &thesaurus_name },
    { 0, "thesaurus_source",
-     "Path to thesaurus source", &ra_string_agent, &path_thesaurus_source },
+     "SETUP: Path to thesaurus source", &ra_string_agent, &path_thesaurus_source },
    { 0, "frequency_source",
-     "Path to frequency source", &ra_string_agent, &path_frequency_source },
+     "SETUP: Path to frequency source", &ra_string_agent, &path_frequency_source },
 
 
-   {'f', "freq_word",
-    "Display frequency information about word", &ra_string_agent, &freq_word },
    {'F', "freq_import",
-    "Import frequency data", &ra_flag_agent, &flag_import_frequencies }, 
+    "SETUP: Import frequency data", &ra_flag_agent, &flag_import_frequencies }, 
    { 0,  "update_freq",
-     "Update thesaurus word frequencies from wordc.db", &ra_flag_agent, &flag_update_freq },
+     "SETUP: Update thesaurus word frequencies from wordc.db", &ra_flag_agent, &flag_update_freq },
 
    {'v', "verbose",
-    "Verbose output for import", &ra_flag_agent, &flag_verbose },
+    "SETUP: Verbose output for import", &ra_flag_agent, &flag_verbose },
 
+   {'f', "freq_word",
+    "DEBUGGING: Display frequency information about word", &ra_string_agent, &freq_word },
    {'e', "enumerate",
     "DEBUGGING: Count synonyms per entry", &ra_flag_agent, &flag_enumerate },
    {'d', "thesaurus_dump",

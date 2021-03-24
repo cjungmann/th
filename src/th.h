@@ -13,7 +13,7 @@ struct stwc_closure {
    RecID      id;
 };
 
-
+extern bool flag_roots_start;
 
 /**
  * Function pointer types for callbacks
