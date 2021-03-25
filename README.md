@@ -57,7 +57,18 @@ the list of *trunk* words that contain the target word.  Typing
 
 ### Quick-start
 
-There are three steps, download, `make`, and `make install`.
+Four steps are required to produce a working thesaurus:
+- **download** with **git**
+- **make** to build the program.  This step also downloads the
+  [readargs][2] and [c_patterns][3] projects into subdirectories
+  of the **th** project.
+- **make thesaurus.db** to download and import the public domain
+  book [Moby Thesaurus][4].  This step often takes more than a
+  few minutes.
+- **sudo make install** to make the program available outside
+  of the project directory.
+
+You can cut and paste the following steps:
 
 ~~~sh
 git https://www.github.com/cjungmann/th.git
@@ -75,10 +86,11 @@ The following is a list of dependencies, of which only the first
 
 1. **db version 5** (Berkeley Database) is necessary for the B-Tree
    databases in the project.  If you're using **git**, you should
-   already have this, but *FreeBSD* only includes an older version
-   of **db**.  Make will immediately terminate with a message if
-   it can't find an appropriate **db**, in which case it's up to
-   you to use your package manager to install **db**.
+   already have this, even on *FreeBSD* which otherwise only includes
+   an older version of **db**.  Make will immediately terminate with
+   a message if it can't find an appropriate **db**, in which case
+   it's up to you to use your package manager to install **db** or
+   build it from [sources][7].
 
 1. **git** is used to download some dependencies.  While project
    dependencies can be directly downloaded without **git**, doing
@@ -141,7 +153,7 @@ with using the output.  We'll see.
 [4]: http://gutenberg.org/ebooks/3202         "Moby Thesaurus"
 [5]: http://gutenberg.org/                    "Gutenberg Home Page"
 [6]: http://gutenberg.org/ebooks/3203         "Moby Part of Speech"
-
+[7]: https://github.com/berkeleydb/libdb/releases "BerkeleyDB 5.3.28"
 ## Original Project Goals
 
 I had several objectives when I started this project.
