@@ -6,6 +6,21 @@
 # Thus, this makefile fragment will clone and build the project, then
 # initialize a variable with link arguments that will add the library
 # to your project
+#
+# Example:
+#
+# Initialize implicit rule default values:
+# CFLAGS = -Wall -Werror -pedantic -ggdb
+# LDLIBS = 
+#
+# all: Confirm_Readargs ${TARGET}
+#
+# include make_static_readargs.mk
+# CFLAGS += ${RA_INC}
+# LDLIBS += ${RA_LINK}
+#
+# ${TARGET}: ${MODULES}
+#	${CC} -o $@ ${MODULES} ${LDLIBS}
 
 RA_USE_SHARED ?= 0
 RA_HEADERS != find /usr -name readargs.h 2>/dev/null; [ 1 -eq 1 ]
@@ -21,9 +36,6 @@ RA_LINK != if [ ${RA_USE_SHARED} -eq 0 ]; \
 	 fi
 
 Confirm_Readargs: ${RA_TARGETS}
-	@echo RA_HEADERS is ${RA_HEADERS}
-	@echo RA_INC is ${RA_INC}
-	@echo RA_LINK is ${RA_LINK}
 
 readargs/libreadargs.a : readargs
 	cd readargs; make
