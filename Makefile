@@ -15,8 +15,12 @@ ETC_TARGET = /etc/th.conf
 MODULES != ls -1 ${SRC}/*.c | sed 's/\.c/.o/g'
 
 # Default rule:
-all: Confirm_DB5 CP_PREPARE_SOURCES ${TARGET} ${DB_NAME}.db
+all: Confirm_DB5 Confirm_Readargs CP_PREPARE_SOURCES ${TARGET} ${DB_NAME}.db
 	@echo Finished generating ${TARGET}
+
+include make.d/make_static_readargs.mk
+CFLAGS += ${RA_INC}
+LDLIBS == ${RA_LINK}
 
 CP_NAMES = get_keypress prompter columnize read_file_lines commaize
 include make.d/make_c_patterns.mk
