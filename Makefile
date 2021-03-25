@@ -4,7 +4,7 @@ TARGET = th
 PREFIX ?= /usr/local
 CFLAGS = -Wall -Werror -std=c99 -pedantic -m64 -ggdb
 LDFLAGS =
-LDLIBS = -lreadargs
+LDLIBS = 
 SRC = src
 
 # Set installation location variables
