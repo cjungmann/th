@@ -67,11 +67,18 @@ make thesaurus.db
 sudo make install
 ~~~
 
-
-The project is easy to build, but there are some dependencies that
-must be resolved before 
+The project is easy to build, but depends on other software.
+The following is a list of dependencies, of which only the first
+(the Berkeley Database) is likely to require some intervention.  
 
 ### Dependencies
+
+1. **db version 5** (Berkeley Database) is necessary for the B-Tree
+   databases in the project.  If you're using **git**, you should
+   already have this, but *FreeBSD* only includes an older version
+   of **db**.  Make will immediately terminate with a message if
+   it can't find an appropriate **db**, in which case it's up to
+   you to use your package manager to install **db**.
 
 1. **git** is used to download some dependencies.  While project
    dependencies can be directly downloaded without **git**, doing
@@ -80,20 +87,16 @@ must be resolved before
    the dependencies.
 
 1. [readargs][2] is one of my projects that processes command line
-   arguments.  Please download/clone, build and install this library.
+   arguments.  While this project is still used by **th**, it is no
+   longer necessary to install this library for **th** to work.  The
+   **th** Makefile now downloads the **readargs** project into a
+   subdirectory, builds it and uses the static library instead.
 
 1. [c_patterns][3] is another of my projects, an experiment in
-   managing reusable code without needing a library.  The makefile
+   managing reusable code without needing a library.  The Makefile
    uses **git** to download the project, then makes links to some
    [c_patterns][3] modules in the **src** directory to be included
    in the **th** build.
-
-1. **db version 5** (Berkeley Database) is necessary for the B-Tree
-   databases in the project.  If you're using **git**, you should
-   already have this, but *FreeBSD* only includes an older version
-   of **db**.  Make will immediately terminate with a message if
-   it can't find an appropriate **db**, in which case it's up to
-   you to use your package manager to install **db**.
 
 ### Build and Install
 
