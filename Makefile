@@ -15,7 +15,7 @@ ETC_TARGET = /etc/th.conf
 MODULES != ls -1 ${SRC}/*.c | sed 's/\.c/.o/g'
 
 # Default rule:
-all: Confirm_DB5 Confirm_Readargs CP_PREPARE_SOURCES ${TARGET} ${DB_NAME}.db
+all: Confirm_DB5 Confirm_Readargs CP_PREPARE_SOURCES ${TARGET} # ${DB_NAME}.db
 	@echo Finished generating ${TARGET}
 
 include make.d/make_static_readargs.mk
@@ -60,7 +60,8 @@ full_clean:
 	rm -rf ${CP_SOURCES}
 	rm -rf ${CP_HEADERS}
 
-${DB_NAME}.db: files/mthesaur.txt
+# ${DB_NAME}.db: files/mthesaur.txt
+thesaurus.db: files/mthesaur.txt
 	@echo "Importing Moby Thesaurus"
 	./th -Tv
 
