@@ -63,6 +63,7 @@ There are three steps, download, `make`, and `make install`.
 git https://www.github.com/cjungmann/th.git
 cd th
 make
+make thesaurus.db
 sudo make install
 ~~~
 
