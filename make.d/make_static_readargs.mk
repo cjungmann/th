@@ -29,7 +29,7 @@ RA_HEADERS != find /usr -name readargs.h 2>/dev/null; [ 1 -eq 1 ]
 
 RA_TARGETS != if [ ${RA_USE_SHARED} -eq 0 ]; then echo "readargs/libreadargs.a"; fi;
 
-RA_INC != if [ ${RA_USE_SHARED} -eq 0 ]; then echo "-I${PWD}/readargs"; fi
+RA_INC != if [ ${RA_USE_SHARED} -eq 0 ]; then echo "-I${PWD}/readargs/src"; fi
 RA_LINK != if [ ${RA_USE_SHARED} -eq 0 ]; \
 	then echo -L${PWD}/readargs/ -l:libreadargs.a; \
 	else echo -lreadargs; \
