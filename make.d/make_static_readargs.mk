@@ -31,7 +31,7 @@ RA_TARGETS != if [ ${RA_USE_SHARED} -eq 0 ]; then echo "readargs/libreadargs.a";
 
 RA_INC != if [ ${RA_USE_SHARED} -eq 0 ]; then echo "-I${PWD}/readargs/src"; fi
 RA_LINK != if [ ${RA_USE_SHARED} -eq 0 ]; \
-	then echo -L${PWD}/readargs/ -l:libreadargs.a; \
+	then echo ${PWD}/readargs/libreadargs.a; \
 	else echo -lreadargs; \
 	 fi
 
