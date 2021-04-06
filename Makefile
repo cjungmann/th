@@ -15,7 +15,7 @@ ETC_TARGET = /etc/th.conf
 MODULES != ls -1 ${SRC}/*.c | sed 's/\.c/.o/g'
 
 # Default rule:
-all: Confirm_DB5 Confirm_Readargs CP_PREPARE_SOURCES ${TARGET} # ${DB_NAME}.db
+all: Confirm_DB5 Confirm_Readargs CP_Prepare_Sources ${TARGET} # ${DB_NAME}.db
 	@echo Finished generating ${TARGET}
 
 include make.d/make_static_readargs.mk
