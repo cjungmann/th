@@ -1,17 +1,28 @@
 # Thesaurus Project th
 
-A thesaurus is a valuable tool for writing.  While an online thesaurus
-is more convenient than a print thesaurus, I still somewhat dread using
-one.  I have often turned to [thesaurus.com], but I don't like the
-experience using it.  There are too many ads, and it takes too long
-to peruse the output for words with many synonyms.  The word *cut*, for
-example, runs to 46 pages.
+This is a long README. After a longish pitch, I have tried to organize
+the content in an order that justifies continued reading or early termination.
 
-This project offers an alternative to online thesauri.  As a local
-command-line program designed for keyboard navigation, it is quick
-to open and easy to scan.  It is not as well organized as [thesaurus.com],
-with synonym organized but find your perfect work in much less time
-using **th**.
+## The Pitch
+
+A thesaurus, dare I say, essential for a writer.  It can help discover
+the best word to express the author's meaning.  Software developers
+may also find a thesaurus helpful for suggesting options for naming
+functions and variables to avoid symbol collisions.
+
+Before I wrote this program, I would occasionally and reluctantly
+make use of one of the online thesauri for writing prose or code.
+While I respect the need of these sites to support themselves, the
+ads through which they finance their expenses are intrusive and they
+make the process slow and annoying.  I used them as a last resort.
+
+This project offers an alternative to online thesauri.  It is an
+offline, command-line program designed for keyboard navigation.  It
+is quick to open and easy to scan.  It does lack subgrouping by
+similar meaning or part-of-speech, which is admittedly _very_ helpful
+when the synonym count is large, but this offline thesaurus
+compensates with speed and convenience.  I use **th** much more
+frequently than I ever used online thesauri.
 
 The words and relations in this thesaurus are taken from a public-domain
 [moby thesaurus][4].  The source consists of lines of related words,
@@ -30,16 +41,33 @@ very useful, and it will work as advertised.  Look at the
 
 ## Usage
 
+### Invoking th
+
 With **th** built and installed, open a new console window, type
 `th` followed by the word for which you need synonyms.
 
 ![Invoke thesaurus](README/th_call.png)
 
+### The th Display
+
 The output is in columns for easier scanning, with context lines on
-top and bottom, and a list of options at the bottom for navigation
-and an option for other menus for changing the sorting or flow.
+top and bottom, and a list of options at the bottom for navigation.
+The color-highlighted letter in each word is the key to press to
+invoke the option.
 
 ![Thesaurus screen](README/th_example.png)
+
+#### What's a trunk?
+
+There is one option that needs to be explained.  The option **trunks**
+displays another list of related words, and is the alternate to
+**branches**, which is the default display.  The **branches** display
+shows the words that follow a word entry in the Moby thesaurus, and
+the **trunks** display shows the entries in which the given word are
+found.  Some words are so obscure that they do not have an entry but
+may be found in the synonym lists of one or more entries.
+
+### Navigating th
 
 Use an option by clicking the key corresponding to the highlighted
 character of the option.  For example, click `n` to go to the next
@@ -58,7 +86,7 @@ the list of *trunk* words that contain the target word.  Typing
 ### Quick-start
 
 Four steps are required to produce a working thesaurus:
-- **download** with **git**
+- Use **git** to clone **th** from *github*.
 - **make** to build the program.  This step also downloads the
   [readargs][2] and [c_patterns][3] projects into subdirectories
   of the **th** project.
@@ -68,10 +96,12 @@ Four steps are required to produce a working thesaurus:
 - **sudo make install** to make the program available outside
   of the project directory.
 
-You can cut and paste the following steps:
+After making sure you are in an appropriate directory, usually
+somewhere under your home directory, you can cut and paste the
+following steps:
 
 ~~~sh
-git https://www.github.com/cjungmann/th.git
+git clone https://www.github.com/cjungmann/th.git
 cd th
 make
 make thesaurus.db
@@ -81,6 +111,13 @@ sudo make install
 The project is easy to build, but depends on other software.
 The following is a list of dependencies, of which only the first
 (the Berkeley Database) is likely to require some intervention.  
+
+### Uninstalling
+
+If you don't like or need this program, run `sudo make uninstall`
+to remove the command and its support files from their installed
+locations.  Delete the cloned directory to complete the purge of
+all traces of **th**.
 
 ### Dependencies
 
@@ -110,12 +147,18 @@ The following is a list of dependencies, of which only the first
    [c_patterns][3] modules in the **src** directory to be included
    in the **th** build.
 
-### Build and Install
+### Details of Build and Install
 
 Once all of the dependencies are provided, building the project
 is a simple matter of invoking **make**, then **[sudo] make install**.
 
 #### Unorthodox(?) Makefile
+
+This project, while useful, is also a learning experiment.  Some
+build or install decisions I have made may not be best practices, or
+may even be frowned-upon by more experienced developers.  To inform
+your decision about whether to download and install this application,
+the following is an attempt to preview and explain my practices.
 
 As expected, **make** will compile the **th** application.
 Unconventionally, perhaps, **make** performs other tasks that may
@@ -131,9 +174,9 @@ take some time:
    [The Gutenberg Project][5].  This populates the application's
    word database.
 
-1. Download and import a word count database.  The idea is to
-   offer alternate sorting orders to make it easier to find a word
-   from a longer list.  This is not working right now.  I'm not
+1. **Abandoned** Download and import a word count database.  The idea
+   is to  offer alternate sorting orders to make it easier to find a
+   word from a longer list.  This is not working right now.  I'm not
    sure I'll come back to this because I'm finding the benefit of
    reading an alphapetic list far outweighs the dubious benefit
    of trying to put more commonly-used words first.  The reason is
@@ -143,7 +186,7 @@ take some time:
 ## Future Possibilities
 
 I just noticed that there is a [Moby Part of Speech list][6] resource
-that may help organizing the output.  It's intriguing, but I'm not
+that could help organize the output.  It's intriguing, but I'm not
 sure it will be helpful, based on how much alphabetical sorting helps
 with using the output.  We'll see.
 
@@ -154,6 +197,7 @@ with using the output.  We'll see.
 [5]: http://gutenberg.org/                    "Gutenberg Home Page"
 [6]: http://gutenberg.org/ebooks/3203         "Moby Part of Speech"
 [7]: https://github.com/berkeleydb/libdb/releases "BerkeleyDB 5.3.28"
+
 ## Original Project Goals
 
 I had several objectives when I started this project.
