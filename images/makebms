@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+#
+# Make bitmaps for web pages
+#
+
 declare SCALE="50%"
 declare ARED=$'\e[31;1m'
 declare ECOL=$'\e[m'
@@ -44,7 +48,7 @@ pad_image()
     get_image_dims "xdim" "ydim" "$oldname"
     (( xdim = xdim * 5 / 4 ))
 
-    convert "$oldname" -background none -extent "${xdim}x${ydim}" "$newname"
+    convert "$oldname" -background none -gravity center -extent "${xdim}x${ydim}" "$newname"
 }
 
 proc_image()
