@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+
+declare SCALE="50%"
+declare ARED=$'\e[31;1m'
+declare ECOL=$'\e[m'
+# declare TERM_PROMPT="\033[32;1muser\033[m@\033[38;2;255;128;128mhost\033[m\$:~"
+declare TERM_PROMPT=$'\e[32;1muser\e[m@\e[32;1mhost\e[m\$:~ '
+
+kill_prog_by_name()
+{
+    local prog_name="$1"
+    local -a progs parts
+    local prog
+
+    local IFS=$'\n'
+    progs=( $( ps -A | grep [[:space:]]"${prog_name}$" ) )
+    for prog in "${progs[@]}"; do
+        IFS=' '
+        parts=( $prog )
+        kill "${parts[0]}"
+    done
+}
+
+get_image_dims()
+{
+    local -n gid_xdim="$1"
+    local -n gid_ydim="$2"
+    local name="$3"
+
+    local -a parts=( $( identify "$name" ) )
+    local IFS='x'
+    local -a dims=( ${parts[2]} )
+
+    gid_xdim="${dims[0]}"
+    gid_ydim="${dims[1]}"
+}
+
+pad_image()
+{
+    local newname="$1"
+    local oldname="${2:=$1}"
+
+    local -i xdim ydim
+    get_image_dims "xdim" "ydim" "$oldname"
+    (( xdim = xdim * 5 / 4 ))
+
+    convert "$oldname" -background none -extent "${xdim}x${ydim}" "$newname"
+}
+
+proc_image()
+{
+    local param_str="$1"
+    local name="$2"
+    local -i height="${3:-25}"
+
+    local -a params=( $param_str )
+    local program_name="${params[0]}"
+
+    local -i echoing=0
+
+    local -a args
+
+    if [ "${program_name:0:1}" == '*' ]; then
+        program_name="${program_name:1}"
+        echoing=1
+        params=( "$program_name" "${params[@]:1}" )
+    fi
+
+    if [ "$echoing" -eq 0 ]; then
+        args=(
+            --geometry=80x"$height"
+            --
+            "${params[@]}"
+        )
+    else
+        args=(
+            --geometry=80x"$height"
+            --
+            "./makebms"
+            "${params[*]}"
+        )
+    fi
+
+    local big_name="big_${name}.png"
+    local temp_name="temp_${name}.png"
+    local end_name="${name}.png"
+
+    # Background-start screenshot app to wait 1 second to take picture:
+    gnome-screenshot -wf "$big_name" -d 1 &
+
+    # Background-start the app
+    gnome-terminal "${args[@]}" &
+
+    local -i gnome_exit="$?"
+    if [ "$gnome_exit" -eq 0 ]; then
+        # Wait for screenshot to finish
+        sleep 2
+        kill_prog_by_name "$program_name"
+        # Transform
+        if convert -resize "$SCALE" "$big_name" "$temp_name"; then
+            if ! pad_image "$end_name" "$temp_name"; then
+                echo "${ARED}Error with pad_image${ECOL}" >&2
+                exit 1
+            fi
+
+            rm "$temp_name"
+        else
+            echo "${ARED}Error with convert.${ECOL}" >&2
+            exit 1
+        fi
+    else
+        echo "${ARED}Error with gnome-terminal ($gnome_exit).${ECOL}" >&2
+        exit 1
+    fi
+}
+
+make_call()
+{
+    local cmdcall="$1"
+    local pngname="$2"
+    local -i lines="${3:-25}"
+
+    local ptext="${TERM_PROMPT} ${cmdcall}"
+    echo "ptext is $ptext"
+    read -t2
+
+    local -a params=(
+        "*./makebms ${ptext}"
+        "$pngname"
+        "$lines"
+        )
+
+    proc_image "${params[@]}"
+}
+
+if [ "$#" -eq 0 ]; then
+    proc_image "th attention" "th_example"
+    proc_image "th -r attention" "th_example_root"
+    proc_image "th trigger" "th_trigger" 10
+    proc_image "th -r trigger" "th_trigger_root" 10
+
+    proc_image "*th attention" th_call 5
+else
+    declare -a params=( $1 )
+    echo -en "${TERM_PROMPT}"
+    echo -n "${params[*]}"
+    read -t2
+fi
+
