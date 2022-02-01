@@ -98,7 +98,7 @@ proc_image()
     local -i gnome_exit="$?"
     if [ "$gnome_exit" -eq 0 ]; then
         # Wait for screenshot to finish
-        sleep 2
+        sleep 3
         kill_prog_by_name "$program_name"
         # Transform
         if convert -resize "$SCALE" "$big_name" "$temp_name"; then
