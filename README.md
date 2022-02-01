@@ -1,125 +1,123 @@
 # Thesaurus Project th
 
-This is a long README. After a longish pitch, I have tried to organize
-the content in an order that justifies continued reading or early termination.
+I regularly use a thesaurus, both while writing copy for documentation
+and READMEs, and while writing code for naming variables and functions.
 
-## The Pitch
+I used to use online thesauri, especially [thesaurus.com][thesaurus.com],
+but I hated the experience.  Although the results are useful and very
+well-organized, they are not keyboard-friendly and they are slow to
+navigate, especially when the results extend to many pages.
 
-A thesaurus, dare I say, essential for a writer.  It can help discover
-the best word to express the author's meaning.  Software developers
-may also find a thesaurus helpful for suggesting options for naming
-functions and variables to avoid symbol collisions.
-
-Before I wrote this program, I would occasionally and reluctantly
-make use of one of the online thesauri for writing prose or code.
-While I respect the need of these sites to support themselves, the
-ads through which they finance their expenses are intrusive and they
-make the process slow and annoying.  I used them as a last resort.
-
-This project offers an alternative to online thesauri.  It is an
-offline, command-line program designed for keyboard navigation.  It
-is quick to open and easy to scan.  It does lack subgrouping by
-similar meaning or part-of-speech, which is admittedly _very_ helpful
-when the synonym count is large, but this offline thesaurus
-compensates with speed and convenience.  I use **th** much more
-frequently than I ever used online thesauri.
-
-The words and relations in this thesaurus are taken from a public-domain
-[moby thesaurus][4].  The source consists of lines of related words,
-the first word in each line is the root or *branch* word, and the
-remaining words on the line are related *branch* words.  This thesaurus
-allows you to switch between showing a list of *branch* words of the
-requested word, or a list of *root* words that contain the requested word.
-
-**NOTE:** This project started as a platform for experimenting with
-the Berkeley Database, various object-oriented ideas in C, portable
-*makefile* design, and an idea I have about using a collection of
-small C-language modules for resuable code.  There is some, shall I
-say, *awkwardness* in the code.  Despite all that, I find the thesaurus
-very useful, and it will work as advertised.  Look at the
-[Original Project Goals](#Original%20Project%20Goals) below.
+So I made my own thesaurus.  I use it far more often than I ever used
+[thesaurus.com][thesaurus.com].  It has fewer features, but it is much
+quicker to access and less disruptive of the creative process.
 
 ## Usage
 
-### Invoking th
+### Looking up Words
 
-With **th** built and installed, open a new console window, type
-`th` followed by the word for which you need synonyms.
+In a terminal window, type `th` followed by a word.  For example,
+to lookup the word *attention*:
 
-![Invoke thesaurus](README/th_call.png)
+| ![invoking the thesaurus](images/th_call.png) |
+|:--:|
+| Invoking `th` for *attention* |
 
-### The th Display
+### Search Results Display
 
-The output is in columns for easier scanning, with context lines on
-top and bottom, and a list of options at the bottom for navigation.
-The color-highlighted letter in each word is the key to press to
-invoke the option.
+The output is a list of related words and phrases, organized into
+columns, with context lines above and below, and a list of navigation
+options at the bottom.
 
-![Thesaurus screen](README/th_example.png)
+| ![Thesaurus screen][example] |
+| :--: |
+| Search result for *attention* |
 
-#### What's a trunk?
+### Navigation Keys
 
-There is one option that needs to be explained.  The option **trunks**
-displays another list of related words, and is the alternate to
-**branches**, which is the default display.  The **branches** display
-shows the words that follow a word entry in the Moby thesaurus, and
-the **trunks** display shows the entries in which the given word are
-found.  Some words are so obscure that they do not have an entry but
-may be found in the synonym lists of one or more entries.
+The bottom line of the results display shows the list of available
+actions.  Initiate an action by typing the first letter of the action
+(highlighted on screen for emphasis).
 
-### Navigating th
+- **f** (first) to move to the first page of related words
+- **p** (previous)to move back one page
+- **n** (next) to move forward one page
+- **l** (last) to move the the last page
+- **t** (trunks) the collection of entries that include the target word
+- **b** (branches) collection of words included in the target word's entry
+- **q** (quit) leave the program
 
-Use an option by clicking the key corresponding to the highlighted
-character of the option.  For example, click `n` to go to the next
-page, `p` to go back one page.  Respecting *nix convention, typing
-`q` quits the program, leaving the current set of words on screen.
-Type `t` to switch to the *trunks* display as noted above.
+### Trunks and Branches
 
-![Branches screen](README/th_example_root.png)
+The data is organized as thesaurus entries, each with a collection of
+related words and phrases.  An entry is a *trunk* and the related
+words and phrases are the *branches*.
 
-If the user triggers the `branches` mode, the program will display
-the list of *trunk* words that contain the target word.  Typing
-`b` will restore the original *branches* display.
+The default view is in branches mode.  The words displayed are the
+words and phrases listed after the entry in the source thesaurus.
+Switching to *trunks* mode will show the entries that contain the
+word.  This is most clearly demonstrated by an example without any
+branches:
 
-## Building th
+| ![search for trigger][orphan] |
+| :--: |
+| *trigger* is a word without an entry |
 
-### Quick-start
+There is no thesaurus entry for the word *trigger*.  The word
+*trigger* is in the thesaurus, however, as branches of other entries.
+Switch to *trunks* mode to see the entries that include *trigger*:
 
-Four steps are required to produce a working thesaurus:
-- Use **git** to clone **th** from *github*.
-- **make** to build the program.  This step also downloads the
+| ![trigger trunks][orphan_trunks] |
+| :--: |
+| List of words for which *trigger* is a related word |
+
+## To Download and Try th
+
+This program is not available as a package; the source code must be
+downloaded and the project built.  The following steps will produce
+a working thesaurus:
+
+- `git clone https://www.github.com/cjungmann/th.git`  
+  Download the **th** project from *github*.
+- `cd th`  
+  Change to the project directory.
+- `make`  
+  Build the program.  This step also downloads the
   [readargs][2] and [c_patterns][3] projects into subdirectories
   of the **th** project.
-- **make thesaurus.db** to download and import the public domain
-  book [Moby Thesaurus][4].  This step often takes more than a
-  few minutes.
-- **sudo make install** to make the program available outside
-  of the project directory.
+- `make thesaurus.db`  
+  to download and import the public domain book [Moby Thesaurus][4].
+  This step often takes a long time.
 
-After making sure you are in an appropriate directory, usually
-somewhere under your home directory, you can cut and paste the
-following steps:
+Play with the program to see if you like it.  If you want to
+install it to be available outside of the build directory, invoke
+the following command:
 
-~~~sh
-git clone https://www.github.com/cjungmann/th.git
-cd th
-make
-make thesaurus.db
-sudo make install
-~~~
-
-The project is easy to build, but depends on other software.
-The following is a list of dependencies, of which only the first
-(the Berkeley Database) is likely to require some intervention.  
+`sudo make install`
 
 ### Uninstalling
 
-If you don't like or need this program, run `sudo make uninstall`
-to remove the command and its support files from their installed
-locations.  Delete the cloned directory to complete the purge of
-all traces of **th**.
+It is easy to remove the program is if you decide you don't need
+the program.
 
-### Dependencies
+If you've installed the program, first uninstall with
+`sudo make uninstall`  
+This will remove the program, the support files, and the directory
+in which the support files were installed.
+
+If the program is not installed, you can safely just delete the
+cloned directory.
+
+## For Developers and Curious Users
+
+The following material will mainly interest developers, if anyone.
+
+The project is easy to build, but depends on other software.
+The following is a list of dependencies, of which only the first
+(the Berkeley Database) may require some intervention.  Items
+3 and 4 below are downloaded into a subdirectory under the build
+directory, and the code found there is statically-linked to the
+executable, so they won't affect your environment.
 
 1. **db version 5** (Berkeley Database) is necessary for the B-Tree
    databases in the project.  If you're using **git**, you should
@@ -147,18 +145,14 @@ all traces of **th**.
    [c_patterns][3] modules in the **src** directory to be included
    in the **th** build.
 
-### Details of Build and Install
+### Unorthodox(?) Makefile
 
-Once all of the dependencies are provided, building the project
-is a simple matter of invoking **make**, then **[sudo] make install**.
-
-#### Unorthodox(?) Makefile
-
-This project, while useful, is also a learning experiment.  Some
-build or install decisions I have made may not be best practices, or
-may even be frowned-upon by more experienced developers.  To inform
-your decision about whether to download and install this application,
-the following is an attempt to preview and explain my practices.
+This project, while useful (to me, at least), is also an experiment.
+One of my goals here is to improve my makefile-writing skills.  Some
+of the build and install decisions I have made may not be best
+practices, or may even be frowned-upon by more experienced developers.
+If you are worried about what will happen to your system if you install
+`th`, I hope the following will inform your decision.
 
 As expected, **make** will compile the **th** application.
 Unconventionally, perhaps, **make** performs other tasks that may
@@ -167,8 +161,9 @@ take some time:
 1. Downloads my repository of C modules and uses several of them
    by making links into the **src** directory.
 
-1. The **makefile** identifies and immediately terminates if it
-   detects missing dependencies.
+1. Instead of using `configure` to check dependencies, the **makefile**
+   identifies and immediately terminates with a helpful message if
+   it detects missing dependencies.
 
 1. Download and import the public domain [moby thesaurus][4] from
    [The Gutenberg Project][5].  This populates the application's
@@ -183,22 +178,14 @@ take some time:
    that it's much easier to keep track of words in consideration
    when they are not randomly scattered in a long list of words.
 
-## Future Possibilities
+### Future Possibilities
 
 I just noticed that there is a [Moby Part of Speech list][6] resource
 that could help organize the output.  It's intriguing, but I'm not
 sure it will be helpful, based on how much alphabetical sorting helps
 with using the output.  We'll see.
 
-[thesaurus.com]: https://www.thesaurus.com    "www.thesaurus.com"
-[2]: https://github.com/cjungmann/readargs    "readargs project"
-[3]: https://github.com/cjungmann/c_patterns  "c_patterns project"
-[4]: http://gutenberg.org/ebooks/3202         "Moby Thesaurus"
-[5]: http://gutenberg.org/                    "Gutenberg Home Page"
-[6]: http://gutenberg.org/ebooks/3203         "Moby Part of Speech"
-[7]: https://github.com/berkeleydb/libdb/releases "BerkeleyDB 5.3.28"
-
-## Original Project Goals
+### Original Project Goals
 
 I had several objectives when I started this project.
 
@@ -211,10 +198,10 @@ I had several objectives when I started this project.
   understand their design flaws and missing features.  I use
 
   1. **columnize.c** to generate the columnar output,
-  
+
   2. **prompter.c** for the minimal option menu at the bottom
      of the output,
-     
+
   3. **get_keypress.c** for non-echoed keypresses, mostly used
      by **prompter.c**.
 
@@ -227,20 +214,19 @@ I had several objectives when I started this project.
   from Linux than BSD, and I don't expect that many Windows users
   would be comfortable dropping to a command line application.
 
-### Berkeley Database Study
+### Berkeley Database
 
 The Berkeley Database (*bdb*) seems like an interesting database
 product.  Its low-level C-library approach seems similar to the
-[FairCom DB](https://www.faircom.com/products/faircom-db) engine
-I used back in the late 1990s.
+[FairCom DB][8] engine I used back in the late 1990s.
 
 The Berkeley Database is appealing because it is part of Linux
-and BSD distributions and has very small footprint.  It rewards
+and BSD distributions and has a small footprint.  It rewards
 detailed planning of the data, and it is an excuse to explore
 some of my C language ideas.
 
-This project is a restart of my [words project](https://www.github.com/cjungmann/words.git),
-which is meant to be a command-line thesaurus and dictionary.
+This project is a restart of my [words project][9], which
+is meant to be a command-line thesaurus and dictionary.
 That project was my first use of *bdb*, so some of my work there
 is a little clumsy.  I want to design the *bdb* code again from
 scratch.  I will be copying some of the text parsing code from
@@ -258,8 +244,8 @@ the storage efficiency of variable-length records.
 ### Thesaurus Source
 
 There are two public-domain sources of thesauri:
-- [Moby Thesaurus](https://www.gutenberg.org/ebooks/3202)
-- [Roget's Thesaurus](https://www.gutenberg.org/ebooks/10681)
+- [Moby Thesaurus][4]
+- [Roget's Thesaurus][10]
 
 I am using the Moby thesaurus because its organisation is much
 simpler and thus easier to parse.  The problem is that the synonyms
@@ -272,9 +258,10 @@ With hundreds of synonyms for many words, it is very difficult to
 scan the list to find an appropriate word.  I will try to impose
 some order on the list to make it easier to use.  After using the
 tool for some time, I have concluded that alphabetic order is best.
-It's much easier to return to a word in an alphabetic list.
+It's much easier to return to a word in an alphabetic list.  I have
+removed the option to select other word orders.
 
-## Word Frequency
+### Word Frequency
 
 The easiest classification to use is word usage frequency.  I
 plan to list the words from the greatest to the least frequency
@@ -284,15 +271,15 @@ while less popular words may be obsolete.
 There are several sources of word frequencies.  The one I'm
 using is based on Google ngrams:
 
-[Natural Language Corpus Data: Beautiful Data](https://norvig.com/ngrams/)
+[Natural Language Corpus Data: Beautiful Data][11]
 
 I haven't really studied the Norvig source, so it's possible
 that it has a lot of nonsense.  There is another source that
-may have a more sanitized list, [hackerb9/gwordlist](https://github.com/hackerb9/gwordlist).
+may have a more sanitized list, [hackerb9/gwordlist][12].
 If Norvig is a problem, I want to remember this alternate list
 with which I may replace it.
 
-## Dictionary
+### Dictionary
 
 This part is no longer attempted.  The Makefile still includes
 instructions for downloading this information, and the files that
@@ -307,10 +294,34 @@ the words.
 
 Electronic, public-domain dictionaries
 
-- [GNU Collaborative International Dictionary of English](https://gcide.gnu.org.ua/)
-- Gutenberg project [Webster's Unabridged Dictionary](https://www.gutenberg.org/ebooks/29765)
+- [GNU Collaborative International Dictionary of English][13]
+- Gutenberg project [Webster's Unabridged Dictionary][14]
 
 My first attempt is to use the GNU Collaborative International Dictionary
 of English (GCIDE).  It is based on an old (1914) version of Webster's,
 with some words added by more modern editors.
+
+
+[//]: # (HTML links)
+[thesaurus.com]: <https://www.thesaurus.com>    "www.thesaurus.com"
+[2]: <https://github.com/cjungmann/readargs>    "readargs project"
+[3]: <https://github.com/cjungmann/c_patterns>  "c_patterns project"
+[4]: <http://gutenberg.org/ebooks/3202>         "Moby Thesaurus"
+[5]: <http://gutenberg.org/>                    "Gutenberg Home Page"
+[6]: <http://gutenberg.org/ebooks/3203>         "Moby Part of Speech"
+[7]: <https://github.com/berkeleydb/libdb/releases> "BerkeleyDB 5.3.28"
+[8]: <https://www.faircom.com/products/faircom-db>  "FairCom DB"
+[9]: <https://www.github.com/cjungmann/words.git>   "words project"
+[10]: <https://www.gutenberg.org/ebooks/10681>      "Roget's Thesaurus"
+[11]: <https://norvig.com/ngrams/>                  "Norvig language corpus"
+[12]: <https://github.com/hackerb9/gwordlist>       "hackerb9 wordlist"
+[13]: <https://gcide.gnu.org.ua/>                   "GNU collaborative internation dictionary"
+[14]: <https://www.gutenberg.org/ebooks/29765>      "Gutenberg project Webster's Unabridged Dictionary"
+
+[//]: # (image links)
+[calling]: <images/th_call.png>                 "calling th"
+[example]: <images/th_example.png>              "simple example"
+[trunks]:  <images/th_example_root.png>         "simple trunks"
+[orphan]:  <images/th_trigger.png>              "trigger page"
+[orphan_trunks]: <images/th_trigger_root.png>   "trigger branches"
 
