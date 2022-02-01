@@ -281,9 +281,12 @@ with which I may replace it.
 
 ### Dictionary
 
-This part is no longer attempted.  The Makefile still includes
-instructions for downloading this information, and the files that
-help interpret the source are still included in the repository.
+This part is no longer attempted.  Interpreting the source data
+is complicated by the need to recognize and convert the dictionary's
+unique notation to unicode characters.  I solved many of these
+problems, but many still remain.  The Makefile still includes
+instructions for downloading this information and and the repository
+retains some conversion scripts in case I want to come back to this.
 
 Grouping synonyms by part of speech (ie noun, verb, adjective, etc.)
 has potential to be useful, as well.  The first problem is in identifying
