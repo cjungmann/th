@@ -4,12 +4,16 @@ readargs
 *.k2r
 *.r2w
 *.w2r
-README/big_*.png
+
+images/big_*.png
+
+# Ignore linked files from c_patterns
 src/get_keypress.*
 src/columnize.*
 src/commaize.*
 src/prompter.*
 src/read_file_lines.*
+
 src/*.o
 src/bdb
 src/istringt
@@ -23,3 +27,5 @@ th
 thesaurus*
 words
 wordc
+
+scripts/dict.xml
