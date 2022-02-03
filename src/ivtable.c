@@ -1,4 +1,4 @@
-// -*- compile-command: "cc -Wall -Werror -std=c99 -pedantic -m64 -ggdb -o ivtable ivtable.c -ldb -DIVTABLE_MAIN" -*-
+// -*- compile-command: "cc -Wall -Werror -std=c99 -pedantic -ggdb -o ivtable ivtable.c -ldb -DIVTABLE_MAIN" -*-
 
 #include <string.h>
 #include "ivtable.h"

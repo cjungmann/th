@@ -1,4 +1,4 @@
-// -*- compile-command: "cc -Wall -Werror -std=c99 -pedantic -m64 -ggdb -o istringt istringt.c -ldb -DISTRINGT_MAIN" -*-
+// -*- compile-command: "cc -Wall -Werror -std=c99 -pedantic -ggdb -o istringt istringt.c -ldb -DISTRINGT_MAIN" -*-
 
 #include "istringt.h"
 #include <string.h>
