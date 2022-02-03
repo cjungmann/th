@@ -46,7 +46,7 @@ CP_SOURCE_LINKS_NEEDED !=if [ ${CP_NAMES_COUNT} -gt ${CP_SOURCES_COUNT} ]; then 
 # This variable will contain a list of names for making links
 # if the links are not detected.  If not empty, it will be a
 # list of artificial prerequisite that will trigger the links.
-CP_LINK_PREREQS != if [ ${CP_SOURCE_LINKS_NEEDED} -eq 1 ]; then echo ${CP_NAMES}; fi; [ 1 -eq 1 ]
+CP_LINK_PREREQS != if [ ${CP_SOURCE_LINKS_NEEDED} -eq 1 ]; then echo ${CP_NAMES}; fi;
 
 # Create targets of C files if links needed.
 # We need to do this to aid BSD make to identify these targets
@@ -54,6 +54,7 @@ CP_SOURCE_TARGETS != if [ ${CP_SOURCE_LINKS_NEEDED} -eq 1 ]; then echo ${CP_SOUR
 
 # Initiate the link-making
 CP_PREPARE_SOURCES: ${CP_LINK_PREREQS} ${CP_SOURCE_TARGETS}
+CP_Prepare_Sources: ${CP_LINK_PREREQS} ${CP_SOURCE_TARGETS}
 
 ${CP_NAMES}: c_patterns
 	@echo Making link from c_patterns to $@
