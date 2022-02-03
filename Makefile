@@ -2,7 +2,7 @@ TARGET = th
 
 # Set implicit variables (info make -n implicit\ variables)
 PREFIX ?= /usr/local
-CFLAGS = -Wall -Werror -std=c99 -pedantic -m64 -ggdb
+CFLAGS = -Wall -Werror -std=c99 -pedantic -ggdb
 LDFLAGS =
 LDLIBS = 
 SRC = src
