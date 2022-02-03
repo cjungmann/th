@@ -44,7 +44,7 @@ DB5_NEEDED != d=${DB_IS_DB5}; d5=${DB5_USE_ALTERNATIVE}; if [ $$d -eq 0 ] && [ $
 
 # Feedback variable with contain a command if the builder
 # needs to take some action, or empty if everything is good.
-DB5_MESSAGE != d=${DB5_NEEDED}; if [ $$d -eq 1 ]; then echo "@echo \\\"Use your package manager to install version 5 of the Berkeley Database.\\\"; exit 1"; else echo "@echo Appropriate version of Berkeley Database found."; fi; [ 1 -eq 1 ]
+DB5_MESSAGE != d=${DB5_NEEDED}; if [ $$d -eq 1 ]; then echo "@env echo -e \\\"Use your package manager to install version 5 of the Berkeley Database \(libdb5.3 and libdb5.3-dev\).\\\"; exit 1"; else echo "@echo Appropriate version of Berkeley Database found."; fi; [ 1 -eq 1 ]
 
 # Build output variable
 DB5_INC != d=${DB_IS_DB5}; dp=${DB5_ALTERNATIVE_PATH}; if [ $$d -eq 0 ] && [ $$dp ]; then echo "-I$$dp"; fi;
