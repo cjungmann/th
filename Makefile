@@ -43,7 +43,7 @@ install: ${DB_NAME}.db
 	install -d ${DB_HOME}
 	install -D --mode=744  ${DB_NAME}.* ${DB_HOME}
 	install -D --mode=755  ${TARGET}    ${PREFIX}/bin
-	echo -e ${DB_HOME}/${DB_NAME} > ${ETC_TARGET}
+	env echo -e ${DB_HOME}/${DB_NAME} > ${ETC_TARGET}
 
 uninstall:
 	rm -f ${ETC_TARGET}
