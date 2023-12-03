@@ -145,9 +145,9 @@ void build_word_list_alloca(TTABS *ttabs, RecID *list, int len, word_list_user u
 
 void stack_report_final(const char **list, int length, void *closure)
 {
-   const char **stack_pointer = (const char **)closure;
-   int last_stack;
-   *stack_pointer = (const char*)&last_stack;
+   const char __attribute__((unused)) **stack_pointer = (const char **)closure;
+   int __attribute__((unused)) last_stack;
+   // __attribute__((unused)) *stack_pointer = (const char*)&last_stack;
 }
 
 void stack_report_user(TTABS *ttabs, TRESULT *tresult, void *closure)
